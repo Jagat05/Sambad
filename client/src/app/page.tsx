@@ -32,7 +32,7 @@ const Index = () => {
               <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
                 <User className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">New to OrgChat?</CardTitle>
+              <CardTitle className="text-2xl">New to Sambad?</CardTitle>
               <CardDescription>
                 Create your account and join your organization's communication
                 hub.

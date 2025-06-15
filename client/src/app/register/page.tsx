@@ -21,6 +21,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import Link from "next/link";
+import axios from "axios";
 
 interface FormValues {
   username: string;
@@ -69,23 +70,19 @@ export default function Register() {
     { setSubmitting, resetForm }: FormikHelpers<FormValues>
   ) => {
     console.log("Submitting:", values); // using values to avoid unused warning
-
-    const fakeApiCall = new Promise<void>((res) => setTimeout(res, 2000));
-
-    toast.promise(fakeApiCall, {
-      loading: "Creating account…",
-      success: "🎉 Registration successful!",
-      error: "🚨 Registration failed. Try again.",
-    });
-
-    try {
-      await fakeApiCall;
-      resetForm();
-    } catch {
-      // Additional error logic if needed
-    } finally {
-      setSubmitting(false);
-    }
+    axios
+      // .post("/Register/", values)
+      .post(" http://localhost:8080/Register", values)
+      .then(() => {
+        toast.success("🎉 Registration successful!");
+        resetForm();
+      })
+      .catch(() => {
+        toast.error("🚨 Registration failed. Try again.");
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   };
 
   return (
