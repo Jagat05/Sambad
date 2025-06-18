@@ -68,14 +68,8 @@
 
 ---
 
-## 🧱 5 Development Phases ✅
 
-Use the checklist below to track your progress:
 ## ✅ Sambad Version Progress Checklist
-
-Track your progress across all versions of Sambad:
-
----
 
 ### 🟢 Version 1: Basic Chat App MVP  
 🎯 **Goal:** Core chat and org functionality for a working minimum product.
