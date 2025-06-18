@@ -6,12 +6,12 @@
 
 ## 📚 Table of Contents
 
-- [🚀 Tech Stack](#-tech-stack)
-- [📁 Folder Structure](#-folder-structure)
-- [🔧 Installation & Setup](#-installation--setup)
-- [🌀 Project Workflow](#-project-workflow)
-- [🧩 Version Roadmap](#-version-roadmap)
-- [🎯 Project Goal](#-project-goal)
+- [🚀 Tech Stack](#-tech-stack)  
+- [📁 Folder Structure](#-folder-structure)  
+- [🔧 Installation & Setup](#-installation--setup)  
+- [🌀 Project Workflow](#-project-workflow)  
+- [🧩 Version Roadmap](#-version-roadmap)  
+- [🎯 Project Goal](#-project-goal)  
 - [✍️ Author](#-author)
 
 ---
@@ -19,71 +19,86 @@
 ## 🚀 Tech Stack
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- Socket.IO
-- JWT (Authentication)
+- Node.js  
+- Express.js  
+- MongoDB + Mongoose  
+- Socket.IO  
+- JWT (Authentication)  
 - Bcrypt.js (Password Hashing)
 
 ### Frontend
-- Next.js (React Framework)
-- Redux Toolkit (State Management)
-- Tailwind CSS (Styling)
-- Axios (API Calls)
+- Next.js (React Framework)  
+- Redux Toolkit (State Management)  
+- Tailwind CSS (Styling)  
+- Axios (API Calls)  
 - Socket.IO Client (Real-Time Messaging)
 
 ---
 
 ## 📁 Folder Structure
+
+```bash
 sambad/
 │
 ├── backend/
-│ ├── controllers/
-│ ├── models/
-│ ├── routes/
-│ ├── socket/
-│ ├── middleware/
-│ └── server.js
+│   ├── controllers/           # Controller logic for API endpoints
+│   ├── models/                # Mongoose schemas
+│   ├── routes/                # Express route definitions
+│   ├── socket/                # Socket.IO event handlers
+│   ├── middleware/            # Authentication and error handling middleware
+│   └── index.js               # Main server entry point
 │
 ├── frontend/
-│ ├── components/
-│ ├── pages/
-│ ├── redux/
-│ ├── utils/
-│ └── tailwind.config.js
+│   └── src/
+│       ├── components/        # Reusable UI components
+│       ├── pages/             # Next.js pages (routes)
+│       ├── redux/             # Redux Toolkit slices and store config
+│       ├── utils/             # Utility functions and helpers
+│       └── tailwind.config.js # Tailwind CSS configuration
 │
-├── .env
-├── README.md
-└── package.json
+├── .env                       # Environment variables
+├── README.md                  # Project documentation
+└── package.json               # Project dependencies and scripts
+```
 
 ---
 
 ## 🔧 Installation & Setup
 
 ### Prerequisites
-- Node.js ≥ 18
-- MongoDB (local or Atlas)
+- Node.js ≥ 18  
+- MongoDB (local or Atlas)  
 - Git
 
 ### Steps
 
 1. **Clone the repository**
+   ```bash
    git clone https://github.com/Jagat05/Sambad.git
    cd Sambad
+   ```
+
 2. **Backend Setup**
-  cd backend
-  npm install
-  npm run dev
+   ```bash
+   cd backend
+   npm install
+   npm run dev
+   ```
+
 3. **Frontend Setup**
-  cd frontend
-  npm install
-  npm run dev
-4. **Environment Variables**
-  Create a .env file in the backend/ directory:
-  PORT=Your_backend_port
-  MONGO_URI=your_mongodb_uri
-  JWT_SECRET=your_jwt_secret
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+4. **Environment Variables**  
+   Create a `.env` file in the `backend/` directory:
+   ```env
+   PORT=Your_backend_port
+   MONGO_URI=your_mongodb_uri
+   JWT_SECRET=your_jwt_secret
+   ```
 
 ---
 
@@ -94,7 +109,7 @@ sambad/
 
 #### 👤 User Authentication & Organization
 - [x] User registration and login using JWT  
-- [ ] Create or join organization using unique org code 
+- [ ] Create or join organization using unique org code  
 - [ ] Role assignment (Admin/Member)
 
 #### 💬 Private Chat
@@ -107,18 +122,18 @@ sambad/
 ### 🟡 Version 2: Enhanced Collaboration  
 🎯 **Goal:** Improve user experience and enable group collaboration.
 
-####  Group Chat
+#### 🧑‍🤝‍🧑 Group Chat
 - [ ] Admin can create group rooms  
 - [ ] Add/remove members in groups  
 - [ ] Group messages stored and rendered in real-time  
 
-####  Dashboard & User Context
+#### 📋 Dashboard & User Context
 - [ ] List of contacts (all org members)  
 - [ ] List of available rooms (private/group)  
 - [ ] Role display (Admin/Member)  
 - [ ] User profile preview  
 
-####  UX/UI Enhancements
+#### 🎨 UX/UI Enhancements
 - [ ] Show active/online users  
 - [ ] Typing indicators (optional)  
 - [ ] Notification badge for unread messages  
@@ -128,19 +143,21 @@ sambad/
 ### 🔵 Version 3: Advanced & Scalable Version  
 🎯 **Goal:** Add enterprise-ready, scalable, and intelligent features.
 
-#### Security & Roles
+#### 🔐 Security & Roles
 - [ ] Role-based access control to restrict room/message features  
 - [ ] Organization-level management panel for Admins  
 
-#### Advanced Features
+#### 🌟 Advanced Features
 - [ ] File sharing (images, docs)  
 - [ ] Message reactions (like 👍❤️)  
 - [ ] Search functionality (users, messages)  
 
-#### System Improvements
+#### ⚙️ System Improvements
 - [ ] Socket.IO reconnect logic  
-- [ ] Rate limiting & spam protection   
-  
+- [ ] Rate limiting & spam protection  
+
+---
+
 ## 🌀 Project Workflow
 
 This section outlines the full journey of a user in the **Sambad** platform — from account creation to real-time chat.
@@ -148,59 +165,57 @@ This section outlines the full journey of a user in the **Sambad** platform — 
 ---
 
 ### 👤 1. User Registration
-
-- 🔹 A new user signs up via the registration form.
+- 🔹 A new user signs up via the registration form.  
 - 🔹 They have two choices:
-  - **Create a new organization** → Assigned role: `Admin`.
-  - **Join an existing organization** via unique code → Assigned role: `Member`.
+  - **Create a new organization** → Assigned role: `Admin`.  
+  - **Join an existing organization** via unique code → Assigned role: `Member`.  
 - 🔹 JWT is issued on successful registration.
 
 ---
 
 ### 🔐 2. User Login
-
-- 🔹 Users log in using their email and password.
+- 🔹 Users log in using their email and password.  
 - 🔹 Upon success:
-  - JWT is issued and stored in frontend (e.g., localStorage).
-  - User's role and org info are fetched.
+  - JWT is issued and stored on the frontend (e.g., localStorage).  
+  - User’s role and organization info are fetched.  
 - 🔹 Authenticated users are redirected to the dashboard.
 
 ---
 
 ### 🏠 3. Dashboard
-
 - 🔹 Displays:
-  - All **contacts** (other members of the same organization).
-  - All **rooms** (private & group).
-  - Current user info (username, role, profile).
+  - All **contacts** (members of the same organization).  
+  - All **rooms** (private & group).  
+  - Current user info (username, role, profile).  
 - 🔹 Admins get extra options like **Create Room**, **Manage Members**, etc.
 
 ---
 
 ### 📩 4. One-to-One Private Chat
-
-- 🔹 User selects a contact to start chatting.
-- 🔹 A private room (or conversation ID) is created if it doesn't already exist.
+- 🔹 User selects a contact to start chatting.  
+- 🔹 A private room (or conversation ID) is created if it doesn't already exist.  
 - 🔹 Messages are:
-  - Stored in the database (with sender, receiver, timestamps).
+  - Stored in the database (with sender, receiver, timestamps).  
   - Emitted in real-time using Socket.IO.
 
 ---
 
 ### 👥 5. Group Chat (Admin Only)
-
-- 🔹 Admin users can create group chat rooms.
-- 🔹 Members of the same organization are added.
+- 🔹 Admin users can create group chat rooms.  
+- 🔹 Members of the same organization are added.  
 - 🔹 Messages sent in group chat:
-  - Are visible to all members of the group.
+  - Are visible to all group members.  
   - Support real-time updates using Socket.IO.
 
-🎯 Project Goal
-Build a lightweight, real-time organizational communication tool that is fast, secure, and user-friendly, with role-based access and expandable features.
- 
 ---
 
+## 🎯 Project Goal
 
+Build a lightweight, real-time organizational communication tool that is **fast**, **secure**, and **user-friendly**, with **role-based access** and **expandable features**.
 
+---
 
+## ✍️ Author
 
+- Jagat Joshi  
+- [GitHub](https://github.com/Jagat05)
