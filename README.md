@@ -19,7 +19,6 @@
 - **Next.js** (React framework)
 - **Tailwind CSS** (styling)
 - **Axios** (API communication)
-- **Zustand / Context API** (state management)
 - **Socket.IO Client** (real-time frontend sync)
 
 ---
@@ -72,32 +71,73 @@
 ## 🧱 5 Development Phases ✅
 
 Use the checklist below to track your progress:
+## ✅ Sambad Version Progress Checklist
 
-### ✅ Phase 1: User Authentication & Organization System
-- [ ] Create Organization model and join code system
-- [ ] Register user with new org (Admin)
-- [ ] Register user with existing org code (Member)
-- [ ] JWT authentication setup
+Track your progress across all versions of Sambad:
 
-### ✅ Phase 2: Dashboard & Contact Management
-- [ ] Fetch all users in same org (except self)
-- [ ] Display contacts dynamically
-- [ ] Role detection (Admin/Member)
+---
 
-### ✅ Phase 3: Chat Room System
-- [ ] Create one-to-one chat rooms (if not exist)
-- [ ] Create group rooms (Admin only)
-- [ ] Fetch user-specific rooms
+### 🟢 Version 1: Basic Chat App MVP  
+🎯 **Goal:** Core chat and org functionality for a working minimum product.
 
-### ✅ Phase 4: Messaging System
-- [ ] Send & store messages (private/group)
-- [ ] Display messages in chat UI
-- [ ] Show sender info and timestamps
+#### 👤 User Authentication & Organization
+- [ ] User registration and login using JWT  
+- [ ] Create or join organization using unique org code  
+- [ ] Role assignment (Admin/Member)  
 
-### ✅ Phase 5: Real-Time Integration (Socket.IO)
-- [ ] Setup socket connection on both ends
-- [ ] Join rooms dynamically
-- [ ] Broadcast & receive new messages in real-time
+#### 💬 Private Chat
+- [ ] One-to-one private chat between users of same organization  
+- [ ] Message history per user pair  
+- [ ] Responsive chat UI with message timestamps  
+
+---
+
+### 🟡 Version 2: Enhanced Collaboration  
+🎯 **Goal:** Improve user experience and enable group collaboration.
+
+#### 🏘️ Group Chat
+- [ ] Admin can create group rooms  
+- [ ] Add/remove members in groups  
+- [ ] Group messages stored and rendered in real-time  
+
+#### 📋 Dashboard & User Context
+- [ ] List of contacts (all org members)  
+- [ ] List of available rooms (private/group)  
+- [ ] Role display (Admin/Member)  
+- [ ] User profile preview  
+
+#### 🧹 UX/UI Enhancements
+- [ ] Show active/online users  
+- [ ] Typing indicators (optional)  
+- [ ] Notification badge for unread messages  
+
+---
+
+### 🔵 Version 3: Advanced & Scalable Version  
+🎯 **Goal:** Add enterprise-ready, scalable, and intelligent features.
+
+#### 🔐 Security & Roles
+- [ ] Role-based access control to restrict room/message features  
+- [ ] Organization-level management panel for Admins  
+
+#### 📊 Advanced Features
+- [ ] File sharing (images, docs)  
+- [ ] Message reactions (like 👍❤️)  
+- [ ] Search functionality (users, messages)  
+
+#### 🔧 System Improvements
+- [ ] Socket.IO reconnect logic  
+- [ ] Rate limiting & spam protection  
+- [ ] Deployment setup (CI/CD)  
+
+---
+
+### 🧩 Summary Progress
+
+- [ ] 🟢 Version 1: Basic Chat App MVP  
+- [ ] 🟡 Version 2: Enhanced Collaboration  
+- [ ] 🔵 Version 3: Advanced & Scalable Version
+
 
 ---
 
