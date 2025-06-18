@@ -1,83 +1,101 @@
-# Sambad - Organization Chat App
+# 🗨️ Sambad - Organization Chat App
 
-**Sambad** is a secure and scalable real-time chat platform tailored for organizations. Users can create or join an organization, engage in one-to-one or group chats, and collaborate within a shared digital workspace. Built using the **MERN stack**, Sambad emphasizes simplicity, role-based access, and fast communication.
-
----
-
-## 🚀 Technology Stack
-
-### 🛠️ Backend
-- **Node.js**
-- **Express.js**
-- **MongoDB + Mongoose**
-- **Socket.IO** (for real-time communication)
-- **JWT** (for authentication)
-- **Bcrypt.js** (for password hashing)
-
-### 💻 Frontend
-- **Next.js** (React framework)
-- **Redux Toolkit**
-- **Tailwind CSS** (styling)
-- **Axios** (API communication)
-- **Socket.IO Client** (real-time frontend sync)
+**Sambad** is a secure and scalable real-time chat platform tailored for organizations. Users can create or join an organization, engage in private or group chats, and collaborate in a shared digital workspace. Built using the **MERN stack**, Sambad focuses on simplicity, role-based access, and real-time communication.
 
 ---
 
-## ✨ Features
+## 📚 Table of Contents
 
-- 🔐 Secure Login & Signup with JWT Authentication  
-- 🏢 Organization Creation or Join via Unique Code  
-- 👥 Role-based Access (Admin / Member)  
-- 💬 One-to-One Private Chat within Organization  
-- 🏘️ Group Chat Rooms (created by Admin)  
-- ⚡ Real-time Messaging using Socket.IO  
-- 🔎 Dashboard with Contacts & Rooms  
-- 📱 Fully responsive modern UI  
-
----
-
-## 🔄 Full User Workflow
-
-### 👤 1. User Registration
-- ➕ **Create Organization:** Becomes `Admin`
-- 🔑 **Join via Org Code:** Becomes `Member`
-
-### 🔐 2. Login
-- ✅ JWT issued on successful login
-- 🔒 Access protected resources using token
-
-### 🏠 3. Dashboard
-- 👥 View Contacts (other users in same organization)
-- 🏘️ View Rooms (Group or Private)
-
-### 📩 4. One-to-One Chat
-- Select contact from dashboard
-- Private room is created (if not exists)
-- Real-time messages sent and received
-
-### 👥 5. Group Chat (Admin only)
-- Admin creates group room
-- Adds members from organization
-- Group chat is accessible in dashboard
-
-### ⚡ 6. Real-Time Chat
-- Socket.IO manages:
-  - Room joining
-  - Message broadcasting
-  - Typing indicators (optional)
+- [🚀 Tech Stack](#-tech-stack)
+- [📁 Folder Structure](#-folder-structure)
+- [🔧 Installation & Setup](#-installation--setup)
+- [🌀 Project Workflow](#-project-workflow)
+- [🧩 Version Roadmap](#-version-roadmap)
+- [🎯 Project Goal](#-project-goal)
+- [✍️ Author](#-author)
 
 ---
 
+## 🚀 Tech Stack
 
-## ✅ Sambad Version Progress Checklist
+### Backend
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- Socket.IO
+- JWT (Authentication)
+- Bcrypt.js (Password Hashing)
+
+### Frontend
+- Next.js (React Framework)
+- Redux Toolkit (State Management)
+- Tailwind CSS (Styling)
+- Axios (API Calls)
+- Socket.IO Client (Real-Time Messaging)
+
+---
+
+## 📁 Folder Structure
+sambad/
+│
+├── backend/
+│ ├── controllers/
+│ ├── models/
+│ ├── routes/
+│ ├── socket/
+│ ├── middleware/
+│ └── server.js
+│
+├── frontend/
+│ ├── components/
+│ ├── pages/
+│ ├── redux/
+│ ├── utils/
+│ └── tailwind.config.js
+│
+├── .env
+├── README.md
+└── package.json
+
+---
+
+## 🔧 Installation & Setup
+
+### Prerequisites
+- Node.js ≥ 18
+- MongoDB (local or Atlas)
+- Git
+
+### Steps
+
+1. **Clone the repository**
+   git clone https://github.com/Jagat05/Sambad.git
+   cd Sambad
+2. **Backend Setup**
+  cd backend
+  npm install
+  npm run dev
+3. **Frontend Setup**
+  cd frontend
+  npm install
+  npm run dev
+4. **Environment Variables**
+  Create a .env file in the backend/ directory:
+  PORT=Your_backend_port
+  MONGO_URI=your_mongodb_uri
+  JWT_SECRET=your_jwt_secret
+
+---
+
+## 🧩 Version Roadmap
 
 ### 🟢 Version 1: Basic Chat App MVP  
-🎯 **Goal:** Core chat and org functionality for a working minimum product.
+🎯 **Goal:** Core chat and organization functionality for a working minimum product.
 
 #### 👤 User Authentication & Organization
-- [ ] User registration and login using JWT  
-- [ ] Create or join organization using unique org code  
-- [ ] Role assignment (Admin/Member)  
+- [x] User registration and login using JWT  
+- [ ] Create or join organization using unique org code 
+- [ ] Role assignment (Admin/Member)
 
 #### 💬 Private Chat
 - [ ] One-to-one private chat between users of same organization  
@@ -89,18 +107,18 @@
 ### 🟡 Version 2: Enhanced Collaboration  
 🎯 **Goal:** Improve user experience and enable group collaboration.
 
-#### 🏘️ Group Chat
+####  Group Chat
 - [ ] Admin can create group rooms  
 - [ ] Add/remove members in groups  
 - [ ] Group messages stored and rendered in real-time  
 
-#### 📋 Dashboard & User Context
+####  Dashboard & User Context
 - [ ] List of contacts (all org members)  
 - [ ] List of available rooms (private/group)  
 - [ ] Role display (Admin/Member)  
 - [ ] User profile preview  
 
-#### 🧹 UX/UI Enhancements
+####  UX/UI Enhancements
 - [ ] Show active/online users  
 - [ ] Typing indicators (optional)  
 - [ ] Notification badge for unread messages  
@@ -110,34 +128,79 @@
 ### 🔵 Version 3: Advanced & Scalable Version  
 🎯 **Goal:** Add enterprise-ready, scalable, and intelligent features.
 
-#### 🔐 Security & Roles
+#### Security & Roles
 - [ ] Role-based access control to restrict room/message features  
 - [ ] Organization-level management panel for Admins  
 
-#### 📊 Advanced Features
+#### Advanced Features
 - [ ] File sharing (images, docs)  
 - [ ] Message reactions (like 👍❤️)  
 - [ ] Search functionality (users, messages)  
 
-#### 🔧 System Improvements
+#### System Improvements
 - [ ] Socket.IO reconnect logic  
-- [ ] Rate limiting & spam protection  
-- [ ] Deployment setup (CI/CD)  
+- [ ] Rate limiting & spam protection   
+  
+## 🌀 Project Workflow
+
+This section outlines the full journey of a user in the **Sambad** platform — from account creation to real-time chat.
 
 ---
 
-### 🧩 Summary Progress
+### 👤 1. User Registration
 
-- [ ] 🟢 Version 1: Basic Chat App MVP  
-- [ ] 🟡 Version 2: Enhanced Collaboration  
-- [ ] 🔵 Version 3: Advanced & Scalable Version
-
-
----
-
-## 📌 Project Goal
-To build a lightweight, fast, and real-time chat system for internal communication within organizations with secure, role-based access.
+- 🔹 A new user signs up via the registration form.
+- 🔹 They have two choices:
+  - **Create a new organization** → Assigned role: `Admin`.
+  - **Join an existing organization** via unique code → Assigned role: `Member`.
+- 🔹 JWT is issued on successful registration.
 
 ---
 
-> Designed & Developed by Jagat Joshi
+### 🔐 2. User Login
+
+- 🔹 Users log in using their email and password.
+- 🔹 Upon success:
+  - JWT is issued and stored in frontend (e.g., localStorage).
+  - User's role and org info are fetched.
+- 🔹 Authenticated users are redirected to the dashboard.
+
+---
+
+### 🏠 3. Dashboard
+
+- 🔹 Displays:
+  - All **contacts** (other members of the same organization).
+  - All **rooms** (private & group).
+  - Current user info (username, role, profile).
+- 🔹 Admins get extra options like **Create Room**, **Manage Members**, etc.
+
+---
+
+### 📩 4. One-to-One Private Chat
+
+- 🔹 User selects a contact to start chatting.
+- 🔹 A private room (or conversation ID) is created if it doesn't already exist.
+- 🔹 Messages are:
+  - Stored in the database (with sender, receiver, timestamps).
+  - Emitted in real-time using Socket.IO.
+
+---
+
+### 👥 5. Group Chat (Admin Only)
+
+- 🔹 Admin users can create group chat rooms.
+- 🔹 Members of the same organization are added.
+- 🔹 Messages sent in group chat:
+  - Are visible to all members of the group.
+  - Support real-time updates using Socket.IO.
+
+🎯 Project Goal
+Build a lightweight, real-time organizational communication tool that is fast, secure, and user-friendly, with role-based access and expandable features.
+ 
+---
+
+
+
+
+
