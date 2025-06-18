@@ -1,5 +1,4 @@
-# Sambad
-# 🗨️ Sambad - Organization Chat App
+# Sambad - Organization Chat App
 
 **Sambad** is a secure and scalable real-time chat platform tailored for organizations. Users can create or join an organization, engage in one-to-one or group chats, and collaborate within a shared digital workspace. Built using the **MERN stack**, Sambad emphasizes simplicity, role-based access, and fast communication.
 
@@ -17,6 +16,7 @@
 
 ### 💻 Frontend
 - **Next.js** (React framework)
+- **Redux Toolkit**
 - **Tailwind CSS** (styling)
 - **Axios** (API communication)
 - **Socket.IO Client** (real-time frontend sync)
