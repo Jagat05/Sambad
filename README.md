@@ -40,25 +40,26 @@
 ```bash
 sambad/
 │
-├── backend/
+├── server/
 │   ├── controllers/           # Controller logic for API endpoints
 │   ├── models/                # Mongoose schemas
 │   ├── routes/                # Express route definitions
 │   ├── socket/                # Socket.IO event handlers
 │   ├── middleware/            # Authentication and error handling middleware
+│   ├── .env                   # Environment variables for backend
+│   ├── package.json           # Server dependencies and scripts
 │   └── index.js               # Main server entry point
-│
 ├── frontend/
 │   └── src/
-│       ├── components/        # Reusable UI components
-│       ├── pages/             # Next.js pages (routes)
-│       ├── redux/             # Redux Toolkit slices and store config
-│       ├── utils/             # Utility functions and helpers
-│       └── tailwind.config.js # Tailwind CSS configuration
+│      ├── components/            # Reusable UI components
+│      ├── pages/                 # Next.js pages (routes)
+│      ├── redux/                 # Redux Toolkit slices and store config
+│      ├── utils/                 # Utility functions and helpers
+│   ├── tailwind.config.js     # Tailwind CSS configuration
+│   ├── package.json           # Client dependencies and scripts
 │
-├── .env                       # Environment variables
+├── .gitignore                 # Git ignore rules
 ├── README.md                  # Project documentation
-└── package.json               # Project dependencies and scripts
 ```
 
 ---
