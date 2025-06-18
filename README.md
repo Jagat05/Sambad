@@ -41,11 +41,12 @@
 sambad/
 │
 ├── server/
-│   ├── controllers/           # Controller logic for API endpoints
-│   ├── models/                # Mongoose schemas
-│   ├── routes/                # Express route definitions
-│   ├── socket/                # Socket.IO event handlers
-│   ├── middleware/            # Authentication and error handling middleware
+│   └── src/   
+│      ├── controllers/           # Controller logic for API endpoints
+│      ├── models/                # Mongoose schemas
+│      ├── routes/                # Express route definitions
+│      ├── socket/                # Socket.IO event handlers
+│      ├── middleware/            # Authentication and error handling middleware
 │   ├── .env                   # Environment variables for backend
 │   ├── package.json           # Server dependencies and scripts
 │   └── index.js               # Main server entry point
