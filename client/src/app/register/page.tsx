@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
@@ -6,13 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import {
   Card,
   CardHeader,
@@ -26,31 +20,28 @@ import axios from "axios";
 interface FormValues {
   username: string;
   email: string;
-  role: string;
   password: string;
   confirmPassword: string;
 }
 
+// ✅ Validation Schema
 const validationSchema = Yup.object<FormValues>({
   username: Yup.string()
     .min(3, "Username must be at least 3 characters")
     .max(20, "Username must be less than 20 characters")
     .required("Username is required"),
+
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
-  role: Yup.string()
-    .oneOf(
-      ["admin", "manager", "employee", "intern"],
-      "Please select a valid role"
-    )
-    .required("Role is required"),
+
   password: Yup.string()
     .min(8, "Password must be at least 8 characters")
     .matches(/[A-Z]/, "Must contain an uppercase letter")
     .matches(/[a-z]/, "Must contain a lowercase letter")
     .matches(/\d/, "Must contain a number")
     .required("Password is required"),
+
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords must match")
     .required("Please confirm your password"),
@@ -59,7 +50,6 @@ const validationSchema = Yup.object<FormValues>({
 const initialValues: FormValues = {
   username: "",
   email: "",
-  role: "",
   password: "",
   confirmPassword: "",
 };
@@ -69,20 +59,25 @@ export default function Register() {
     values: FormValues,
     { setSubmitting, resetForm }: FormikHelpers<FormValues>
   ) => {
-    console.log("Submitting:", values); // using values to avoid unused warning
-    axios
-      // .post("/Register/", values)
-      .post(" http://localhost:8080/Register", values)
-      .then(() => {
-        toast.success("🎉 Registration successful!");
-        resetForm();
-      })
-      .catch(() => {
-        toast.error("🚨 Registration failed. Try again.");
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
+    const { confirmPassword, ...dataToSend } = values;
+
+    try {
+      // Append role manually as "member"
+      const finalData = { ...dataToSend, role: "member" };
+
+      const res = await axios.post("http://localhost:8080/register", finalData);
+      toast.success("🎉 Registration successful!");
+      resetForm();
+    } catch (error: any) {
+      const response = error?.response?.data;
+      const message =
+        typeof response === "string"
+          ? response
+          : response?.message || "🚨 Registration failed. Try again.";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -100,74 +95,80 @@ export default function Register() {
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
           >
-            {({ isSubmitting, setFieldValue }) => (
+            {({ isSubmitting }) => (
               <Form className="space-y-4">
-                {/* Username & Email */}
-                {["username", "email"].map((field) => (
-                  <div key={field} className="space-y-2">
-                    <Label htmlFor={field}>
-                      {field.charAt(0).toUpperCase() + field.slice(1)}
-                    </Label>
-                    <Field
-                      as={Input}
-                      id={field}
-                      name={field}
-                      type={field}
-                      placeholder={`Enter your ${field}`}
-                      className="w-full"
-                    />
-                    <ErrorMessage
-                      name={field}
-                      component="div"
-                      className="text-sm text-destructive"
-                    />
-                  </div>
-                ))}
-
-                {/* Role selection */}
+                {/* Username */}
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select onValueChange={(v) => setFieldValue("role", v)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["admin", "manager", "employee", "intern"].map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {r.charAt(0).toUpperCase() + r.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="username">Username</Label>
+                  <Field
+                    as={Input}
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    className="w-full"
+                  />
                   <ErrorMessage
-                    name="role"
+                    name="username"
                     component="div"
                     className="text-sm text-destructive"
                   />
                 </div>
 
-                {/* Password & Confirm Password */}
-                {["password", "confirmPassword"].map((field) => (
-                  <div key={field} className="space-y-2">
-                    <Label htmlFor={field}>
-                      {field === "password" ? "Password" : "Confirm Password"}
-                    </Label>
-                    <Field
-                      as={Input}
-                      id={field}
-                      name={field}
-                      type="password"
-                      placeholder={`Enter your ${field}`}
-                      className="w-full"
-                    />
-                    <ErrorMessage
-                      name={field}
-                      component="div"
-                      className="text-sm text-destructive"
-                    />
-                  </div>
-                ))}
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Field
+                    as={Input}
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    className="w-full"
+                  />
+                  <ErrorMessage
+                    name="email"
+                    component="div"
+                    className="text-sm text-destructive"
+                  />
+                </div>
 
+                {/* Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Field
+                    as={Input}
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    className="w-full"
+                  />
+                  <ErrorMessage
+                    name="password"
+                    component="div"
+                    className="text-sm text-destructive"
+                  />
+                </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Field
+                    as={Input}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirm your password"
+                    className="w-full"
+                  />
+                  <ErrorMessage
+                    name="confirmPassword"
+                    component="div"
+                    className="text-sm text-destructive"
+                  />
+                </div>
+
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   className="w-full"

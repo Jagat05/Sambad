@@ -5,6 +5,8 @@ import Userrouter from "./routes/user.js";
 import cors from "cors";
 const app = express();
 const port = 8080;
+// import dotenv from "dotenv";
+// dotenv.config();
 
 // Connect to the database
 connectDB();
@@ -20,4 +22,5 @@ app.use(Userrouter);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
+  // console.log(`Example app listening on port ${process.env.PORT}`);
 });

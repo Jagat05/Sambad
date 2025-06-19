@@ -1,5 +1,3 @@
-// models/User.ts or models/User.js
-
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
@@ -20,20 +18,15 @@ const userSchema = new Schema(
       trim: true,
       match: [/\S+@\S+\.\S+/, "Invalid email format"],
     },
-    role: {
-      type: String,
-      enum: ["admin", "manager", "employee", "intern"],
-      required: true,
-    },
     password: {
       type: String,
       required: true,
       minlength: 8,
     },
-    // confirmPassword is used only in frontend validation; don't store it in DB
+    role: { type: String, enum: ["admin", "member"], default: "member" },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 

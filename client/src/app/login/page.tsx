@@ -1,19 +1,13 @@
 "use client";
+
 import React from "react";
-import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik"; // Formik components :contentReference[oaicite:3]{index=3}
+import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import Link from "next/link"; // Use next/link for navigation
+import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { addLoggedinDetails } from "@/redux/reducerSlices/userSlice";
 
 interface LoginValues {
   email: string;
@@ -33,103 +27,88 @@ const initialValues: LoginValues = {
 };
 
 export default function Login() {
+  const dispatch = useDispatch();
+  const router = useRouter();
+
   const handleSubmit = async (
     values: LoginValues,
     { setSubmitting }: FormikHelpers<LoginValues>
   ) => {
-    console.log("Login data:", values);
-
-    const fakeApiCall = new Promise<void>((res) => setTimeout(res, 2000));
-
-    toast.promise(fakeApiCall, {
-      loading: "Signing in…",
-      success: "🎉 Login Successful!",
-      error: "🚨 Login failed. Try again.",
-    });
-
     try {
-      await fakeApiCall;
-      // optionally redirect or update user state here
-    } catch {
-      // extra error handling if needed
+      const response = await axios.post("http://localhost:8080/login", values);
+
+      toast.success("🎉 Login Successful!");
+
+      // Dispatch user data to Redux store
+      dispatch(addLoggedinDetails(response.data));
+
+      // Redirect to home page
+      router.push("/home");
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.Message || "🚨 Login failed. Try again.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your organization chat</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
-            onSubmit={handleSubmit}
-          >
-            {({ isSubmitting }) => (
-              <Form className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Field
-                    as={Input}
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    className="w-full"
-                  />
-                  <ErrorMessage
-                    name="email"
-                    component="div"
-                    className="text-sm text-destructive"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Field
-                    as={Input}
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    className="w-full"
-                  />
-                  <ErrorMessage
-                    name="password"
-                    component="div"
-                    className="text-sm text-destructive"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Signing In..." : "Sign In"}
-                </Button>
-
-                <div className="text-center text-sm">
-                  <span className="text-muted-foreground">
-                    Don't have an account?{" "}
-                  </span>
-                  <Link
-                    href="/register"
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Create account
-                  </Link>
-                </div>
-              </Form>
-            )}
-          </Formik>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-md w-full shadow-lg p-6 border rounded">
+        <h2 className="text-2xl font-bold mb-4">Welcome Back</h2>
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ isSubmitting }) => (
+            <Form className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block font-medium mb-1">
+                  Email
+                </label>
+                <Field
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full border rounded px-3 py-2"
+                />
+                <ErrorMessage
+                  name="email"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block font-medium mb-1">
+                  Password
+                </label>
+                <Field
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  className="w-full border rounded px-3 py-2"
+                />
+                <ErrorMessage
+                  name="password"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+              >
+                {isSubmitting ? "Signing In..." : "Sign In"}
+              </button>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 }
