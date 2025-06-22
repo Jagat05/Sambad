@@ -1,26 +1,22 @@
-// const express = require("express");
 import express from "express";
 import connectDB from "./db/conn.js";
 import Userrouter from "./routes/user.js";
+import organizationRoutes from "./routes/organization.js";
 import cors from "cors";
-const app = express();
-const port = 8080;
-// import dotenv from "dotenv";
-// dotenv.config();
+import dotenv from "dotenv";
+dotenv.config();
 
-// Connect to the database
+const app = express();
+const port = process.env.PORT || 8080;
+
 connectDB();
+
 app.use(cors());
 app.use(express.json());
-app.use(Userrouter);
 
-// Import routes
-// import userRouter from "./routes/user.js";
-// app.get("/", (req, res) => {
-//   res.send("Hello World!");
-// });
+app.use(Userrouter); // /register, /login, etc.
+app.use(organizationRoutes); // /organizations, no /api prefix
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-  // console.log(`Example app listening on port ${process.env.PORT}`);
+  console.log(`Server running on http://localhost:${port}`);
 });

@@ -3,32 +3,22 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
-    username: {
-      type: String,
-      required: true,
-      minlength: 3,
-      maxlength: 20,
-      trim: true,
-    },
+    username: { type: String, required: true, minlength: 3, maxlength: 20 },
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-      trim: true,
-      match: [/\S+@\S+\.\S+/, "Invalid email format"],
+      match: [/\S+@\S+\.\S+/, "Invalid email"],
     },
-    password: {
-      type: String,
-      required: true,
-      minlength: 8,
-    },
+    password: { type: String, required: true, minlength: 8 },
     role: { type: String, enum: ["admin", "member"], default: "member" },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const User = mongoose.models.User || mongoose.model("User", userSchema);
-export default User;
+export default mongoose.model("User", userSchema);

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
 const saltRounds = 10;
 const JWT_SECRET = "jagatjoshi"; // ⚠️ Move this to process.env.JWT_SECRET in production
