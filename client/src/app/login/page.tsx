@@ -44,7 +44,10 @@ export default function Login() {
     { setSubmitting }: FormikHelpers<LoginValues>
   ) => {
     try {
-      const response = await axios.post("http://localhost:8080/login", values);
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/login",
+        values
+      );
 
       toast.success("🎉 Login Successful!");
 

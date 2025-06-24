@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState, useRef, MouseEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setSelectedOrganization } from "@/redux/reducerSlices/organizationSlice";
+import axios from "axios";
 import { ChevronDown, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { setSelectedOrganization } from "@/redux/reducerSlices/organizationSlice";
 
 interface Organization {
   id: string;
@@ -22,184 +22,227 @@ interface Organization {
   avatar: string;
   role: string;
   memberCount: number;
+  code: string;
 }
 
-export const OrganizationSelector = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [orgName, setOrgName] = useState("");
+interface Props {
+  onSelect?: (org: Organization) => void;
+}
+
+export const OrganizationSelector: React.FC<Props> = ({ onSelect }) => {
+  const [open, setOpen] = useState<boolean>(false);
+  const [showCreate, setShowCreate] = useState<boolean>(false);
+  const [orgName, setOrgName] = useState<string>("");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selOrg, setSelOrg] = useState<Organization | null>(null);
+
+  // New states for Join Organization feature
+  const [showJoin, setShowJoin] = useState<boolean>(false);
+  const [joinCode, setJoinCode] = useState<string>("");
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch();
   const token = useSelector((state: any) => state.user.token);
-  const selectedOrgFromRedux = useSelector(
+  const selectedReduxOrg = useSelector(
     (state: any) => state.organization.selectedOrganization
   );
 
-  // Sync selectedOrg state with redux store
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
-
   useEffect(() => {
-    if (selectedOrgFromRedux) {
-      setSelectedOrg(selectedOrgFromRedux);
+    if (selectedReduxOrg) {
+      setSelOrg(selectedReduxOrg);
     }
-  }, [selectedOrgFromRedux]);
-
-  const fetchOrganizations = async () => {
-    try {
-      const res = await axios.get("http://localhost:8080/organizations", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setOrganizations(res.data);
-
-      if (res.data.length > 0) {
-        const orgToSelect = res.data[0];
-        setSelectedOrg(orgToSelect);
-        dispatch(setSelectedOrganization(orgToSelect));
-      } else {
-        // No orgs yet, clear selection
-        setSelectedOrg(null);
-        dispatch(setSelectedOrganization(null));
-      }
-    } catch (err) {
-      toast.error("Failed to load organizations");
-    }
-  };
+  }, [selectedReduxOrg]);
 
   useEffect(() => {
     fetchOrganizations();
+
+    const handleClickOutside = (e: MouseEvent | Event) => {
+      if (
+        dropdownRef.current &&
+        !(dropdownRef.current as any).contains(e.target)
+      ) {
+        setOpen(false);
+        setShowJoin(false); // close join input if open and clicking outside
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleCreateOrganization = async () => {
-    if (!orgName.trim()) {
-      toast.error("Organization name is required");
-      return;
-    }
-
+  const fetchOrganizations = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:8080/organizations",
-        { name: orgName },
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/organizations`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
+      setOrganizations(res.data);
+    } catch (err) {
+      toast.error("❌ Failed to load organizations");
+    }
+  };
 
-      const newOrg = res.data.organization || res.data; // depends on backend response structure
+  const handleCreate = async () => {
+    if (!orgName.trim()) return toast.error("⚠️ Name is required");
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/organizations`,
+        { name: orgName },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const newOrg: Organization = res.data.organization || res.data;
       toast.success("✅ Organization created!");
 
       setOrganizations((prev) => [...prev, newOrg]);
-      setSelectedOrg(newOrg);
-      dispatch(setSelectedOrganization(newOrg));
-
+      selectOrg(newOrg);
       setOrgName("");
-      setShowCreateModal(false);
-      setIsDropdownOpen(false);
-    } catch (err: any) {
+      setShowCreate(false);
+    } catch (err) {
+      toast.error("❌ Failed to create organization");
+    }
+  };
+
+  const selectOrg = (org: Organization) => {
+    setSelOrg(org);
+    dispatch(setSelectedOrganization(org));
+    if (onSelect) onSelect(org);
+    setOpen(false);
+    setShowJoin(false); // close join input if open
+  };
+
+  // New join organization function
+  const handleJoin = async () => {
+    if (!joinCode.trim())
+      return toast.error("⚠️ Organization code is required");
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/organizations/join`,
+        { code: joinCode.trim() },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success("✅ Joined organization!");
+      setJoinCode("");
+      setShowJoin(false);
+      fetchOrganizations();
+    } catch (error: any) {
       toast.error(
-        err?.response?.data?.message || "Failed to create organization"
+        error.response?.data?.message || "❌ Failed to join organization"
       );
     }
   };
 
-  const handleSelectOrg = (org: Organization) => {
-    setSelectedOrg(org);
-    dispatch(setSelectedOrganization(org));
-    setIsDropdownOpen(false);
-  };
-
   return (
-    <div className="p-4 border-b border-gray-200 bg-gray-50">
-      <div className="relative">
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-              {selectedOrg?.avatar || "?"}
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900 text-sm">
-                {selectedOrg?.name || "Select Organization"}
-              </h3>
-              <p className="text-xs text-gray-600">
-                {selectedOrg?.memberCount ?? 0} members
-              </p>
-            </div>
+    <div
+      className="p-4 border-b border-gray-200 bg-gray-50 relative z-10"
+      ref={dropdownRef}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+            {selOrg?.avatar || "?"}
           </div>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${
-              isDropdownOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+          <div className="text-left">
+            <h3 className="text-sm font-semibold text-gray-900">
+              {selOrg?.name || "Select Organization"}
+            </h3>
+            <p className="text-xs text-gray-600">
+              {selOrg?.memberCount ?? 0} members
+            </p>
+          </div>
+        </div>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-        {isDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-            <div className="p-2 max-h-60 overflow-y-auto">
-              {organizations.map((org) => (
-                <button
-                  key={org.id}
-                  onClick={() => handleSelectOrg(org)}
-                  className={`w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 ${
-                    selectedOrg?.id === org.id
-                      ? "bg-blue-50 border border-blue-200"
-                      : ""
-                  }`}
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-                    {org.avatar}
-                  </div>
-                  <div className="text-left flex-1">
-                    <h4 className="font-semibold text-gray-900 text-sm">
-                      {org.name}
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      {org.role} • {org.memberCount} members
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-gray-200 p-2">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-sm"
-                onClick={() => setShowCreateModal(true)}
+      {open && (
+        <div className="absolute left-4 right-4 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+          <div className="p-2">
+            {organizations.map((org) => (
+              <button
+                key={org.id}
+                onClick={() => selectOrg(org)}
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 ${
+                  selOrg?.id === org.id
+                    ? "bg-blue-50 border border-blue-200"
+                    : ""
+                }`}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Organization
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Manage Organizations
-              </Button>
-            </div>
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+                  {org.avatar}
+                </div>
+                <div className="text-left">
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    {org.name}
+                  </h4>
+                  <p className="text-xs text-gray-600">
+                    {org.role} • {org.memberCount} members
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sm"
+              onClick={() => setShowCreate(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Create Organization
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sm"
+              onClick={() => setShowJoin((prev) => !prev)}
+            >
+              🔗 Join Organization
+            </Button>
 
-      {/* Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+            {showJoin && (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  placeholder="Enter organization code"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                />
+                <Button onClick={handleJoin}>Join</Button>
+              </div>
+            )}
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sm mt-2"
+            >
+              <Settings className="w-4 h-4 mr-2" /> Manage Organizations
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Org Modal */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Organization</DialogTitle>
-            <DialogDescription>
-              Please enter the name of your new organization.
-            </DialogDescription>
+            <DialogDescription>Enter organization name</DialogDescription>
           </DialogHeader>
-
           <Input
-            placeholder="Organization Name"
+            placeholder="Organization name"
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
           />
-          <Button className="mt-4 w-full" onClick={handleCreateOrganization}>
+          <Button className="mt-4 w-full" onClick={handleCreate}>
             Create
           </Button>
         </DialogContent>

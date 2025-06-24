@@ -65,7 +65,11 @@ export default function Register() {
       // Append role manually as "member"
       const finalData = { ...dataToSend, role: "member" };
 
-      const res = await axios.post("http://localhost:8080/register", finalData);
+      // const res = await axios.post("http://localhost:8080/register", finalData);
+      const res = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/register",
+        finalData
+      );
       toast.success("🎉 Registration successful!");
       resetForm();
     } catch (error: any) {
