@@ -120,7 +120,7 @@ sambad/
 
 - [x] User registration and login using JWT
 - [x] Create or join organization using unique org code
-- [ ] Role assignment (Admin/Member)
+- [x] Role assignment (Admin/Member)
 
 #### 💬 Private Chat
 
