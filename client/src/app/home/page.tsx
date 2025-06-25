@@ -102,7 +102,7 @@ export default function Home() {
           <OrganizationPage organization={orgData} />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-white/50">
-            <div className="text-center max-w-md p-8 mx-auto">
+            <div className="flex flex-col items-center justify-center text-center max-w-md p-8 mx-auto">
               <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-6">
                 <Building2 className="w-12 h-12 text-white" />
               </div>

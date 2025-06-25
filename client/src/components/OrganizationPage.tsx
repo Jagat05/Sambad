@@ -89,7 +89,7 @@ export default function OrganizationPage({
         </div>
 
         {/* Members */}
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
+        {/* <div className="bg-white border rounded-xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">
             👥 Members
           </h2>
@@ -109,7 +109,7 @@ export default function OrganizationPage({
           ) : (
             <p className="text-sm text-gray-500">No members yet.</p>
           )}
-        </div>
+        </div> */}
 
         {/* Invite Section */}
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 shadow">
