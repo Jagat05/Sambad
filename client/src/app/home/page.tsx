@@ -15,7 +15,9 @@ export default function Home() {
   const token = useSelector((s: any) => s.user.token);
   const username = useSelector((s: any) => s.user.username);
 
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  // const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+
   const [selectedOrganization, setSelectedOrganization] = useState<any>(null);
   const [orgData, setOrgData] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
