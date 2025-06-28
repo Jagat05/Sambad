@@ -1,34 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 
 import { MessageSquare, Settings, Users, Building2 } from "lucide-react";
+
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatArea } from "@/components/ChatArea";
 import { UserProfile } from "@/components/UserProfile";
 import { OrganizationSelector } from "@/components/OrganizationSelector";
 import OrganizationPage from "@/components/OrganizationPage";
 
+import { setSelectedChat } from "@/redux/reducerSlices/chatSlice";
+import { setSelectedOrganization } from "@/redux/reducerSlices/organizationSlice";
+
+interface Chat {
+  _id: string;
+  chatName: string;
+  isGroupChat: boolean;
+  type?: "channel" | "group" | "dm";
+  isPrivate?: boolean;
+  members: { _id: string; email: string }[];
+}
+
 export default function Home() {
+  const dispatch = useDispatch();
+
   const token = useSelector((s: any) => s.user.token);
   const username = useSelector((s: any) => s.user.username);
+  const selectedChat = useSelector(
+    (s: any) => s.chat.selectedChat
+  ) as Chat | null;
+  const selectedOrganization = useSelector(
+    (s: any) => s.organization.selectedOrganization
+  );
 
-  // const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
-
-  const [selectedOrganization, setSelectedOrganization] = useState<any>(null);
   const [orgData, setOrgData] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [loadingOrg, setLoadingOrg] = useState(false);
+  const [errorOrg, setErrorOrg] = useState<string | null>(null);
 
-  // Fetch full organization data when selectedOrganization changes
+  // Fetch organization full data on selection change
   useEffect(() => {
     if (!selectedOrganization?.id) {
       setOrgData(null);
-      setSelectedChat(null);
+      dispatch(setSelectedChat(null));
       return;
     }
+
+    setLoadingOrg(true);
+    setErrorOrg(null);
 
     axios
       .get(
@@ -39,22 +61,27 @@ export default function Home() {
       )
       .then((res) => {
         setOrgData(res.data);
-        setSelectedChat(null);
+        dispatch(setSelectedChat(null));
       })
-      .catch(() => setOrgData(null));
-  }, [selectedOrganization, token]);
+      .catch(() => {
+        setOrgData(null);
+        setErrorOrg("Failed to load organization data.");
+      })
+      .finally(() => setLoadingOrg(false));
+  }, [selectedOrganization, token, dispatch]);
 
-  // Prepare members for ChatSidebar
+  // Prepare members for ChatSidebar with safe id
   const membersForChatSidebar = (orgData?.members ?? []).map((m: any) => ({
-    id: m.id,
-    username: m.email.split("@")[0],
-    online: false,
+    id: m._id || m.id || "", // fallback empty string if missing (should not happen)
+    username: m.email ? m.email.split("@")[0] : "unknown",
+    online: false, // TODO: integrate real online status
   }));
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Sidebar Section */}
       <div className="w-80 bg-white shadow-xl border-r flex flex-col">
-        {/* Header with Logo & User Profile */}
+        {/* Header */}
         <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-b">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
@@ -69,23 +96,32 @@ export default function Home() {
             <button
               onClick={() => setShowProfile(!showProfile)}
               className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30"
+              aria-label="User Profile Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Organization Selector */}
-        <OrganizationSelector onSelect={setSelectedOrganization} />
+        {/* Org Selector */}
+        <OrganizationSelector
+          onSelect={(org) => dispatch(setSelectedOrganization(org))}
+        />
 
         {/* Profile Modal */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        {/* Sidebar */}
-        {orgData ? (
+        {/* Chat Sidebar */}
+        {loadingOrg ? (
+          <div className="p-4 text-center text-gray-500 text-sm">
+            Loading organization...
+          </div>
+        ) : errorOrg ? (
+          <div className="p-4 text-center text-red-500 text-sm">{errorOrg}</div>
+        ) : orgData ? (
           <ChatSidebar
-            selectedChat={selectedChat}
-            onSelectChat={setSelectedChat}
+            selectedChat={selectedChat?._id ?? null}
+            onSelectChat={(chat) => dispatch(setSelectedChat(chat))}
             organizationId={orgData.id}
             members={membersForChatSidebar}
           />
@@ -96,10 +132,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Section */}
       <div className="flex-1 flex flex-col">
         {selectedChat ? (
-          <ChatArea chatId={selectedChat} organizationId={orgData?.id} />
+          <ChatArea chatId={selectedChat._id} organizationId={orgData?.id} />
         ) : orgData ? (
           <OrganizationPage organization={orgData} />
         ) : (
