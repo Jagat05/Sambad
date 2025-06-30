@@ -27,25 +27,27 @@ interface Chat {
 export default function Home() {
   const dispatch = useDispatch();
 
-  const token = useSelector((s: any) => s.user.token);
-  const username = useSelector((s: any) => s.user.username);
+  // Selectors from Redux with typed state (you can type your store to avoid `any`)
+  const token = useSelector((state: any) => state.user.token);
+  const username = useSelector((state: any) => state.user.username);
   const selectedChat = useSelector(
-    (s: any) => s.chat.selectedChat
+    (state: any) => state.chat.selectedChat
   ) as Chat | null;
   const selectedOrganization = useSelector(
-    (s: any) => s.organization.selectedOrganization
+    (state: any) => state.organization.selectedOrganization
   );
 
+  // Local state for org data, loading and error
   const [orgData, setOrgData] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [loadingOrg, setLoadingOrg] = useState(false);
   const [errorOrg, setErrorOrg] = useState<string | null>(null);
 
-  // Fetch organization full data on selection change
+  // Fetch organization full data when selectedOrganization changes
   useEffect(() => {
     if (!selectedOrganization?.id) {
       setOrgData(null);
-      dispatch(setSelectedChat(null));
+      dispatch(setSelectedChat(null)); // Reset chat when no org selected
       return;
     }
 
@@ -61,7 +63,7 @@ export default function Home() {
       )
       .then((res) => {
         setOrgData(res.data);
-        dispatch(setSelectedChat(null));
+        dispatch(setSelectedChat(null)); // Clear chat on org change
       })
       .catch(() => {
         setOrgData(null);
@@ -70,19 +72,19 @@ export default function Home() {
       .finally(() => setLoadingOrg(false));
   }, [selectedOrganization, token, dispatch]);
 
-  // Prepare members for ChatSidebar with safe id
+  // Prepare members list safely for ChatSidebar
   const membersForChatSidebar = (orgData?.members ?? []).map((m: any) => ({
-    id: m._id || m.id || "", // fallback empty string if missing (should not happen)
+    id: m._id || m.id || "", // Defensive fallback for IDs
     username: m.email ? m.email.split("@")[0] : "unknown",
-    online: false, // TODO: integrate real online status
+    online: false, // You can add real online status integration later
   }));
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Sidebar Section */}
-      <div className="w-80 bg-white shadow-xl border-r flex flex-col">
+      {/* Sidebar */}
+      <aside className="w-80 bg-white shadow-xl border-r flex flex-col">
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-b">
+        <header className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-b">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -94,24 +96,24 @@ export default function Home() {
               </div>
             </div>
             <button
-              onClick={() => setShowProfile(!showProfile)}
+              onClick={() => setShowProfile((v) => !v)}
               className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30"
               aria-label="User Profile Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Org Selector */}
+        {/* Organization Selector */}
         <OrganizationSelector
           onSelect={(org) => dispatch(setSelectedOrganization(org))}
         />
 
-        {/* Profile Modal */}
+        {/* User Profile Modal */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        {/* Chat Sidebar */}
+        {/* Chat Sidebar or loading/error info */}
         {loadingOrg ? (
           <div className="p-4 text-center text-gray-500 text-sm">
             Loading organization...
@@ -130,12 +132,12 @@ export default function Home() {
             Select an organization to see chats and members.
           </div>
         )}
-      </div>
+      </aside>
 
-      {/* Main Content Section */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col">
         {selectedChat ? (
-          <ChatArea chatId={selectedChat._id} organizationId={orgData?.id} />
+          <ChatArea chatId={selectedChat._id} />
         ) : orgData ? (
           <OrganizationPage organization={orgData} />
         ) : (
@@ -161,7 +163,7 @@ export default function Home() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

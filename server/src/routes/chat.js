@@ -1,13 +1,14 @@
 import express from "express";
 import Chat from "../models/Chat.js";
-import User from "../models/User.js";
+
 const router = express.Router();
 
-// POST: Start or Get one-to-one chat
+// POST: Start or get existing one-to-one chat in an organization
 router.post("/", async (req, res) => {
   const { userId, organizationId } = req.body;
 
   try {
+    // Find existing chat between current user and userId in organization
     let chat = await Chat.findOne({
       isGroupChat: false,
       members: { $all: [req.userId, userId] },
@@ -31,7 +32,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// GET: Get all chats for a user in an org
+// GET: Get all chats for current user in an organization
 router.get("/:organizationId", async (req, res) => {
   try {
     const chats = await Chat.find({
@@ -47,7 +48,7 @@ router.get("/:organizationId", async (req, res) => {
   }
 });
 
-// GET: Get specific chat info
+// GET: Get info about specific chat by id
 router.get("/chat-info/:chatId", async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.chatId).populate(

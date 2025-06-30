@@ -8,6 +8,7 @@ import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { setUser } from "@/redux/reducerSlices/userSlice";
+import { initializeSocket } from "@/utils/socket"; // ✅ import
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -45,25 +46,28 @@ export default function Login() {
   ) => {
     try {
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/login",
+        `${process.env.NEXT_PUBLIC_API_URL}/login`,
         values
       );
 
-      toast.success("🎉 Login Successful!");
-
-      // Dispatch user data to Redux store
-      // dispatch(addLoggedinDetails(response.data));
       const { user, token } = response.data;
+
+      // ✅ Save user to Redux
       dispatch(
         setUser({
           username: user.username,
           email: user.email,
-          token: token,
+          token,
           role: user.role,
         })
       );
 
-      // Redirect to home page
+      // ✅ Initialize socket
+      initializeSocket(token);
+
+      toast.success("🎉 Login Successful!");
+
+      // ✅ Redirect
       router.push("/home");
     } catch (error: any) {
       const message =
@@ -119,12 +123,16 @@ export default function Login() {
                     className="text-red-600 text-sm mt-1"
                   />
                 </div>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
                   {isSubmitting ? "Signing In..." : "Sign In"}
                 </Button>
                 <div className="text-center text-sm">
                   <span className="text-muted-foreground">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                   </span>
                   <Link
                     href="/register"
