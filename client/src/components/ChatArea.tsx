@@ -46,14 +46,13 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { token, id: userId } = useSelector((s: any) => s.user);
 
-  // Initialize socket connection and get instance
   useSocket(token);
   const socket = getSocket();
 
+  // 📦 Load messages and chat info
   useEffect(() => {
     if (!chatId) return;
 
-    // Fetch chat info and messages from backend
     const fetchChatData = async () => {
       try {
         const [msgRes, infoRes] = await Promise.all([
@@ -66,7 +65,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
             { headers: { Authorization: `Bearer ${token}` } }
           ),
         ]);
-
         setMessages(msgRes.data);
         setChatInfo(infoRes.data);
       } catch {
@@ -78,7 +76,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
 
     if (!socket) return;
 
-    // Join chat room on socket
+    // 🧠 Join room
     if (socket.connected) {
       socket.emit("joinChat", chatId);
     } else {
@@ -87,25 +85,11 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       });
     }
 
-    // Handler for receiving new messages
+    // ✅ Handle new incoming message via socket
     const handleNewMessage = (newMsg: Message) => {
       setMessages((prev) => {
-        const ids = new Set(prev.map((m) => m._id));
-        if (ids.has(newMsg._id)) return prev;
-
-        // Replace temporary message if matched by content and sender
-        const tempIndex = prev.findIndex(
-          (m) =>
-            m._id.startsWith("temp-") &&
-            m.content === newMsg.content &&
-            m.sender?._id === newMsg.sender?._id
-        );
-        if (tempIndex !== -1) {
-          const updated = [...prev];
-          updated[tempIndex] = newMsg;
-          return updated;
-        }
-        return [...prev, newMsg];
+        const exists = prev.find((m) => m._id === newMsg._id);
+        return exists ? prev : [...prev, newMsg];
       });
     };
 
@@ -116,46 +100,31 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     };
   }, [chatId, token, socket]);
 
+  // 🔽 Scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
+  // 📨 Send message
   const handleSend = async () => {
     if (!message.trim() || !chatId) return;
 
-    const tempId = `temp-${Date.now()}`;
-    const tempMsg: Message = {
-      _id: tempId,
-      content: message.trim(),
-      sender: { _id: userId, email: "You" },
-      createdAt: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, tempMsg]);
+    const msgContent = message.trim();
     setMessage("");
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/messages`,
-        { chatId, content: tempMsg.content },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { chatId, content: msgContent },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-
-      const saved = res.data as Message;
-
-      setMessages((prev) =>
-        prev.map((msg) => (msg._id === tempId ? saved : msg))
-      );
-      // backend emits "newMessage" event to all clients including this one
+      // No need to manually add to UI, socket handles it
     } catch {
       toast.error("Failed to send.");
-      setMessages((prev) => prev.filter((m) => m._id !== tempId));
     }
   };
 
@@ -165,6 +134,12 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       handleSend();
     }
   };
+
+  const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   const getIcon = () => {
     if (!chatInfo) return null;
@@ -220,7 +195,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         )}
 
         {messages.map((msg) => {
-          const isMe = msg.sender?._id?.toString() === userId?.toString();
+          const isMe = msg.sender?._id === userId;
           return (
             <div
               key={msg._id}
