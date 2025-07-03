@@ -8,7 +8,7 @@ import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { setUser } from "@/redux/reducerSlices/userSlice";
-import { initializeSocket } from "@/utils/socket"; // ✅ import
+import { initializeSocket } from "@/utils/socket"; //  import
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -52,22 +52,30 @@ export default function Login() {
 
       const { user, token } = response.data;
 
-      // ✅ Save user to Redux
+      // Save user to Redux
       dispatch(
         setUser({
+          id: user._id,
           username: user.username,
           email: user.email,
           token,
           role: user.role,
         })
       );
+      // console.log(" Dispatching setUser:", {
+      //   id: user._id,
+      //   username: user.username,
+      //   email: user.email,
+      //   token,
+      //   role: user.role,
+      // });
 
-      // ✅ Initialize socket
+      //  Initialize socket
       initializeSocket(token);
 
       toast.success("🎉 Login Successful!");
 
-      // ✅ Redirect
+      //  Redirect
       router.push("/home");
     } catch (error: any) {
       const message =

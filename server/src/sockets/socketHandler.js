@@ -17,18 +17,18 @@ export const socketHandler = (io) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("🟢 User connected:", socket.id, "UserID:", socket.userId);
+    // console.log("🟢 User connected:", socket.id, "UserID:", socket.userId);
 
     // Listen for client to join specific chat room
     socket.on("joinChat", (chatId) => {
       if (!chatId) return;
       socket.join(chatId);
-      console.log(`📥 User ${socket.userId} joined chat: ${chatId}`);
+      // console.log(`📥 User ${socket.userId} joined chat: ${chatId}`);
     });
 
     // Clean up on disconnect
     socket.on("disconnect", () => {
-      console.log("🔴 User disconnected:", socket.id);
+      // console.log("🔴 User disconnected:", socket.id);
     });
   });
 };

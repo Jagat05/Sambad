@@ -44,12 +44,11 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const [message, setMessage] = useState("");
   const [chatInfo, setChatInfo] = useState<ChatInfo | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const { token, id: userId } = useSelector((s: any) => s.user);
+  const { token, id: userId } = useSelector((state: any) => state.user);
 
   useSocket(token);
   const socket = getSocket();
 
-  // 📦 Load messages and chat info
   useEffect(() => {
     if (!chatId) return;
 
@@ -76,7 +75,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
 
     if (!socket) return;
 
-    // 🧠 Join room
     if (socket.connected) {
       socket.emit("joinChat", chatId);
     } else {
@@ -85,7 +83,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       });
     }
 
-    // ✅ Handle new incoming message via socket
     const handleNewMessage = (newMsg: Message) => {
       setMessages((prev) => {
         const exists = prev.find((m) => m._id === newMsg._id);
@@ -100,12 +97,10 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     };
   }, [chatId, token, socket]);
 
-  // 🔽 Scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 📨 Send message
   const handleSend = async () => {
     if (!message.trim() || !chatId) return;
 
@@ -122,7 +117,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
           },
         }
       );
-      // No need to manually add to UI, socket handles it
     } catch {
       toast.error("Failed to send.");
     }
@@ -195,6 +189,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         )}
 
         {messages.map((msg) => {
+          // console.log("msg.sender._id:", msg.sender?._id, "userId:", userId);
           const isMe = msg.sender?._id === userId;
           return (
             <div
