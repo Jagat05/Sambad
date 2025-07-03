@@ -124,7 +124,7 @@ sambad/
 
 #### 💬 Private Chat
 
-- [ ] One-to-one private chat between users of same organization
+- [x] One-to-one private chat between users of same organization
 - [ ] Message history per user pair
 - [ ] Responsive chat UI with message timestamps
 
