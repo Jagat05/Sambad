@@ -20,7 +20,8 @@ export interface Chat {
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  members: { _id: string; email: string }[];
+  // members: { _id: string; email: string }[];
+  members: { _id: string; email: string; username: string }[];
 }
 
 interface ChatSidebarProps {
@@ -105,10 +106,15 @@ export const ChatSidebar = ({
     }
   };
 
+  // const getChatName = (chat: Chat) => {
+  //   if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
+  //   const other = chat.members.find((m) => m._id !== userId);
+  //   return other?.email || "Direct Message";
+  // };
   const getChatName = (chat: Chat) => {
     if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
     const other = chat.members.find((m) => m._id !== userId);
-    return other?.email || "Direct Message";
+    return other?.username || "Direct Message";
   };
 
   const getChatIcon = (chat: Chat) =>
