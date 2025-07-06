@@ -27,12 +27,21 @@ interface Message {
   createdAt: string;
 }
 
-interface ChatInfo {
+// interface ChatInfo {
+//   _id: string;
+//   chatName?: string;
+//   type?: "channel" | "group" | "dm";
+//   members?: { _id: string; email: string }[];
+//   isPrivate?: boolean;
+// }
+export interface Chat {
   _id: string;
   chatName?: string;
+  isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
-  members?: { _id: string; email: string }[];
   isPrivate?: boolean;
+  // members: { _id: string; email: string }[];
+  members: { _id: string; email: string; username: string }[];
 }
 
 interface ChatAreaProps {
@@ -42,7 +51,7 @@ interface ChatAreaProps {
 export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
-  const [chatInfo, setChatInfo] = useState<ChatInfo | null>(null);
+  const [Chat, setChat] = useState<Chat | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { token, id: userId } = useSelector((state: any) => state.user);
 
@@ -59,13 +68,13 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
             `${process.env.NEXT_PUBLIC_API_URL}/messages/${chatId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           ),
-          axios.get<ChatInfo>(
+          axios.get<Chat>(
             `${process.env.NEXT_PUBLIC_API_URL}/chat/chat-info/${chatId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           ),
         ]);
         setMessages(msgRes.data);
-        setChatInfo(infoRes.data);
+        setChat(infoRes.data);
       } catch {
         toast.error("Failed to load chat.");
       }
@@ -136,11 +145,15 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     });
 
   const getIcon = () => {
-    if (!chatInfo) return null;
-    if (chatInfo.type === "channel")
-      return chatInfo.isPrivate ? <Lock /> : <Hash />;
-    if (chatInfo.type === "group") return <Users />;
+    if (!Chat) return null;
+    if (Chat.type === "channel") return Chat.isPrivate ? <Lock /> : <Hash />;
+    if (Chat.type === "group") return <Users />;
     return null;
+  };
+  const getChatName = (chat: Chat) => {
+    if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
+    const other = chat.members.find((m) => m._id !== userId);
+    return other?.username || "Direct Message";
   };
 
   return (
@@ -148,25 +161,38 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       {/* Header */}
       <div className="p-4 border-b bg-white shadow-sm flex justify-between items-center">
         <div className="flex items-center space-x-3">
+          {/* {getIcon() || (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+              {Chat?.chatName?.[0] || "C"}
+            </div>
+          )} */}
           {getIcon() || (
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
-              {chatInfo?.chatName?.[0] || "C"}
+              {Chat ? getChatName(Chat)[0] : "C"}
             </div>
           )}
+
           <div>
+            {/* <h2 className="font-semibold text-gray-900 flex items-center">
+              {Chat?.chatName || "Chat"}
+              {Chat?.isPrivate && (
+                <Lock className="w-4 h-4 ml-2 text-gray-400" />
+              )}
+            </h2> */}
             <h2 className="font-semibold text-gray-900 flex items-center">
-              {chatInfo?.chatName || "Chat"}
-              {chatInfo?.isPrivate && (
+              {Chat ? getChatName(Chat) : "Chat"}
+              {Chat?.isPrivate && (
                 <Lock className="w-4 h-4 ml-2 text-gray-400" />
               )}
             </h2>
+
             <p className="text-sm text-gray-600">
-              {chatInfo?.members?.length || 0} members
+              {Chat?.members?.length || 0} members
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {chatInfo?.type === "dm" && (
+          {Chat?.type === "dm" && (
             <>
               <Button variant="ghost" size="sm">
                 <Phone className="w-4 h-4" />
@@ -234,7 +260,8 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Message ${chatInfo?.chatName || "..."}`}
+              // placeholder={`Message ${Chat?.chatName || "..."}`}
+              placeholder={`Message ${Chat ? getChatName(Chat) : "..."}`}
               className="pr-12 bg-gray-100 border-gray-300 focus:bg-white rounded-full"
               disabled={!chatId}
             />
