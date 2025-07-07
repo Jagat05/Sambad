@@ -5,11 +5,13 @@ import { persistReducer, persistStore } from "redux-persist";
 import userReducer from "./reducerSlices/userSlice";
 import organizationReducer from "./reducerSlices/organizationSlice";
 import chatReducer from "./reducerSlices/chatSlice";
+import onlineReducer from "./reducerSlices/onlineSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
   organization: organizationReducer,
   chat: chatReducer,
+  online: onlineReducer,
 });
 
 const persistConfig = {

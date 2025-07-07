@@ -11,7 +11,6 @@ import { toast } from "sonner";
 interface Member {
   id: string;
   username: string;
-  online: boolean;
 }
 
 export interface Chat {
@@ -20,7 +19,6 @@ export interface Chat {
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  // members: { _id: string; email: string }[];
   members: { _id: string; email: string; username: string }[];
 }
 
@@ -39,12 +37,13 @@ export const ChatSidebar = ({
 }: ChatSidebarProps) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
+  const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [creatingChannel, setCreatingChannel] = useState(false);
 
-  const { token, id: userId } = useSelector((s: any) => s.user);
+  const { token, id: userId } = useSelector((state: any) => state.user);
+  const { onlineUsers } = useSelector((state: any) => state.online);
 
   useEffect(() => {
     if (organizationId) fetchChats();
@@ -55,7 +54,9 @@ export const ChatSidebar = ({
     try {
       const { data } = await axios.get<Chat[]>(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/${organizationId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       setChats(data);
     } catch {
@@ -80,7 +81,9 @@ export const ChatSidebar = ({
   };
 
   const handleCreateChannel = async () => {
-    if (!newChannelName.trim()) return toast.error("Channel name required");
+    if (!newChannelName.trim()) {
+      return toast.error("Channel name required");
+    }
     setCreatingChannel(true);
     try {
       const { data } = await axios.post<Chat>(
@@ -106,29 +109,13 @@ export const ChatSidebar = ({
     }
   };
 
-  // const getChatName = (chat: Chat) => {
-  //   if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
-  //   const other = chat.members.find((m) => m._id !== userId);
-  //   return other?.email || "Direct Message";
-  // };
-  const getChatName = (chat: Chat) => {
-    if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
+  const getChatName = (chat: Chat): string => {
+    if (chat.isGroupChat || chat.type === "channel") return chat.chatName ?? "";
     const other = chat.members.find((m) => m._id !== userId);
     return other?.username || "Direct Message";
   };
 
-  const getChatIcon = (chat: Chat) =>
-    chat.isGroupChat ? (
-      <Users className="w-4 h-4" />
-    ) : chat.type === "channel" ? (
-      chat.isPrivate ? (
-        <Lock className="w-4 h-4" />
-      ) : (
-        <Hash className="w-4 h-4" />
-      )
-    ) : (
-      <Hash className="w-4 h-4" />
-    );
+  const isUserOnline = (id: string) => onlineUsers.includes(id);
 
   const filteredChats = chats.filter((chat) =>
     getChatName(chat).toLowerCase().includes(searchTerm.toLowerCase())
@@ -150,7 +137,7 @@ export const ChatSidebar = ({
         </div>
       </div>
 
-      {/* New Channel */}
+      {/* New Channel Button */}
       <div className="p-4 border-b">
         <Button
           onClick={() => setIsCreatingChannel(true)}
@@ -161,14 +148,14 @@ export const ChatSidebar = ({
         </Button>
       </div>
 
-      {/* Channel Modal */}
+      {/* Create Channel Modal */}
       {isCreatingChannel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-md w-80 relative">
             <X
               className="absolute right-3 top-3 cursor-pointer"
               onClick={() => setIsCreatingChannel(false)}
-              aria-label="Close"
+              aria-label="Close modal"
             />
             <h2 className="text-lg font-semibold mb-4">Create Channel</h2>
             <Input
@@ -200,57 +187,87 @@ export const ChatSidebar = ({
         ) : filteredChats.length === 0 ? (
           <p className="p-4 text-center text-gray-500">No chats found.</p>
         ) : (
-          filteredChats.map((chat) => (
-            <div
-              key={chat._id}
-              onClick={() => onSelectChat(chat)}
-              className={`p-3 cursor-pointer hover:bg-gray-100 ${
-                selectedChat === chat._id
-                  ? "bg-blue-50 border-l-4 border-blue-600"
-                  : ""
-              }`}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onSelectChat(chat);
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
-                  {getChatIcon(chat)}
+          filteredChats.map((chat) => {
+            const other = chat.members.find((m) => m._id !== userId);
+            const isOnline = other ? isUserOnline(other._id) : false;
+
+            const chatName = getChatName(chat);
+            const initials = chatName[0]?.toUpperCase() || "?";
+
+            return (
+              <div
+                key={chat._id}
+                onClick={() => onSelectChat(chat)}
+                className={`p-3 cursor-pointer hover:bg-gray-100 ${
+                  selectedChat === chat._id
+                    ? "bg-blue-50 border-l-4 border-blue-600"
+                    : ""
+                }`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSelectChat(chat);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-semibold uppercase">
+                      {chat.isGroupChat || chat.type === "channel" ? (
+                        chat.type === "channel" ? (
+                          <Hash className="w-4 h-4" />
+                        ) : (
+                          <Users className="w-4 h-4" />
+                        )
+                      ) : (
+                        initials
+                      )}
+                    </div>
+                    {chat.type === "dm" && (
+                      <span
+                        className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                          isOnline ? "bg-green-500" : "bg-gray-400"
+                        }`}
+                      />
+                    )}
+                  </div>
+                  <p className="text-sm font-medium truncate">{chatName}</p>
                 </div>
-                <p className="text-sm font-medium">{getChatName(chat)}</p>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
-        {/* Members */}
+        {/* Members List */}
         <div className="mt-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Members
         </div>
-        {members.map((member) => (
-          <div
-            key={member.id}
-            onClick={() => handleSelectMember(member.id)}
-            className="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-100"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSelectMember(member.id);
-            }}
-          >
-            <div className="relative">
-              <div className="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center">
-                {member.username[0].toUpperCase()}
+        {members.map((member) => {
+          const isOnline = onlineUsers.includes(member.id);
+          return (
+            <div
+              key={member.id}
+              onClick={() => handleSelectMember(member.id)}
+              className="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-100"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSelectMember(member.id);
+              }}
+            >
+              <div className="relative">
+                <div className="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center uppercase font-medium">
+                  {member.username[0]}
+                </div>
+                <span
+                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                    isOnline ? "bg-green-500" : "bg-gray-400"
+                  }`}
+                />
               </div>
-              {member.online && (
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-              )}
+              <p className="text-sm text-gray-800">{member.username}</p>
             </div>
-            <p className="text-sm text-gray-800">{member.username}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
