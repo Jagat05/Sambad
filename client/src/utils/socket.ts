@@ -14,3 +14,10 @@ export const initializeSocket = (token: string) => {
 };
 
 export const getSocket = (): Socket | null => socket;
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};
