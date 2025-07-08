@@ -21,7 +21,7 @@ export const socketHandler = (io) => {
     const userId = socket.userId;
     if (!userId) return;
 
-    console.log("🟢 User connected:", userId, socket.id);
+    // console.log("🟢 User connected:", userId, socket.id);
 
     // Add user to map
     onlineUsers.set(userId, socket.id);
@@ -35,12 +35,12 @@ export const socketHandler = (io) => {
     socket.on("joinChat", (chatId) => {
       if (chatId) {
         socket.join(chatId);
-        console.log(`📥 ${userId} joined chat room: ${chatId}`);
+        // console.log(`📥 ${userId} joined chat room: ${chatId}`);
       }
     });
 
     socket.on("disconnect", () => {
-      console.log("🔴 User disconnected:", userId);
+      // console.log("🔴 User disconnected:", userId);
       onlineUsers.delete(userId);
       socket.broadcast.emit("user-offline", { userId });
     });

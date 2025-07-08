@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { logoutUser } from "@/redux/reducerSlices/userSlice";
+import { disconnectSocket } from "@/utils/socket";
 
 interface UserProfileProps {
   onClose: () => void;
@@ -20,6 +21,7 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
   // Get first letter of username or fallback to '?'
   const userInitial = username?.charAt(0)?.toUpperCase() || "?";
   const handleLogout = () => {
+    disconnectSocket();
     dispatch(logoutUser()); // Reset Redux user state
     localStorage.removeItem("user"); // Optional: clear localStorage
     router.push("/login"); // Redirect to login
