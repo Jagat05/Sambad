@@ -127,6 +127,13 @@ sambad/
 - [x] One-to-one private chat between users of same organization
 - [ ] Better ChatUI
 
+#### 🎨 UX/UI Enhancements
+
+- [x] Show active/online users
+- [ ] Typing indicators
+- [ ] Notification badge for unread messages
+- [ ] Emoji Sending Option in messages
+
 ---
 
 ### 🟡 Version 2: Enhanced Collaboration
@@ -135,23 +142,21 @@ sambad/
 
 #### 🧑‍🤝‍🧑 Group Chat
 
-- [ ] Admin can create group rooms
+- [x] Create Group Chat and Channel
 - [ ] Add/remove members in groups
 - [ ] Group messages stored and rendered in real-time
+
+#### 🧑‍🤝 Admin Work
+
+- [ ] Delete Organizations
+- [ ] Remove members From Organization
+- [ ] Edit Organization, Group And Channels
 
 #### 📋 Dashboard & User Context
 
 - [x] List of contacts (all org members)
-- [ ] List of available rooms (private/group)
-- [ ] Role display (Admin/Member)
+- [x] List of available rooms (private/group/Channel)
 - [ ] User profile preview
-
-#### 🎨 UX/UI Enhancements
-
-- [x] Show active/online users
-- [ ] Typing indicators
-- [ ] Notification badge for unread messages
-- [ ] Emoji Sending Option in messages
 
 ---
 
