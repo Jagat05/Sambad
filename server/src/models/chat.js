@@ -20,6 +20,19 @@ const chatSchema = new mongoose.Schema(
     chatName: {
       type: String,
     },
+    isPrivate: {
+      type: Boolean,
+      default: true,
+    },
+    type: {
+      type: String,
+      enum: ["dm", "group", "channel"],
+      default: "dm",
+    },
+    latestMessage: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
   },
   { timestamps: true }
 );

@@ -61,4 +61,58 @@ router.get("/chat-info/:chatId", async (req, res) => {
   }
 });
 
+// POST: Create a new channel
+router.post("/create-channel", async (req, res) => {
+  const { organizationId, chatName, isPrivate, members } = req.body;
+
+  if (!chatName || !organizationId || !members || members.length === 0) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const channel = new Chat({
+      chatName,
+      isGroupChat: true,
+      type: "channel",
+      isPrivate: isPrivate || false,
+      members,
+      organizationId,
+    });
+
+    await channel.save();
+    const populated = await channel.populate("members", "-password");
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error("Create Channel Error:", err);
+    res.status(500).json({ error: "Failed to create channel" });
+  }
+});
+
+// POST: Create a new group
+router.post("/create-group", async (req, res) => {
+  const { organizationId, chatName, members } = req.body;
+
+  if (!chatName || !organizationId || !members || members.length === 0) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const group = new Chat({
+      chatName,
+      isGroupChat: true,
+      type: "group",
+      isPrivate: true,
+      members,
+      organizationId,
+    });
+
+    await group.save();
+    const populated = await group.populate("members", "-password");
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error("Create Group Error:", err);
+    res.status(500).json({ error: "Failed to create group" });
+  }
+});
+
 export default router;

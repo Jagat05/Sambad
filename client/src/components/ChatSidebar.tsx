@@ -38,9 +38,12 @@ export const ChatSidebar = ({
   const [chats, setChats] = useState<Chat[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [newChannelName, setNewChannelName] = useState("");
+  const [newGroupName, setNewGroupName] = useState("");
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [creatingChannel, setCreatingChannel] = useState(false);
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   const { token, id: userId } = useSelector((state: any) => state.user);
   const { onlineUsers } = useSelector((state: any) => state.online);
@@ -80,6 +83,34 @@ export const ChatSidebar = ({
     }
   };
 
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) {
+      return toast.error("Group name required");
+    }
+    setCreatingGroup(true);
+    try {
+      const { data } = await axios.post<Chat>(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/create-group`,
+        {
+          organizationId,
+          chatName: newGroupName.trim(),
+          isGroupChat: true,
+          isPrivate: false,
+          members: [userId],
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setChats((prev) => [data, ...prev]);
+      setNewGroupName("");
+      setIsCreatingGroup(false);
+      onSelectChat(data);
+      toast.success("Group created.");
+    } catch {
+      toast.error("Failed to create Group.");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
   const handleCreateChannel = async () => {
     if (!newChannelName.trim()) {
       return toast.error("Channel name required");
@@ -137,15 +168,28 @@ export const ChatSidebar = ({
         </div>
       </div>
 
-      {/* New Channel Button */}
       <div className="p-4 border-b">
-        <Button
-          onClick={() => setIsCreatingChannel(true)}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-          disabled={loading}
-        >
-          <Plus className="w-4 h-4 mr-2" /> New Channel
-        </Button>
+        {/* New Channel Button */}
+        <div className="channel">
+          <Button
+            onClick={() => setIsCreatingChannel(true)}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+            disabled={loading}
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Channel
+          </Button>
+        </div>
+
+        {/* New Group Button */}
+        <div className="mt-2.5">
+          <Button
+            onClick={() => setIsCreatingGroup(true)}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+            disabled={loading}
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Group
+          </Button>
+        </div>
       </div>
 
       {/* Create Channel Modal */}
@@ -174,6 +218,37 @@ export const ChatSidebar = ({
               </Button>
               <Button onClick={handleCreateChannel} disabled={creatingChannel}>
                 {creatingChannel ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Create Group Modal */}
+      {isCreatingGroup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-md w-80 relative">
+            <X
+              className="absolute right-3 top-3 cursor-pointer"
+              onClick={() => setIsCreatingGroup(false)}
+              aria-label="Close modal"
+            />
+            <h2 className="text-lg font-semibold mb-4">Create Group</h2>
+            <Input
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="Group name"
+              onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreatingGroup(false)}
+                disabled={creatingGroup}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateGroup} disabled={creatingGroup}>
+                {creatingGroup ? "Creating..." : "Create"}
               </Button>
             </div>
           </div>
