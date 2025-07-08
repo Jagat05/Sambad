@@ -119,13 +119,13 @@ sambad/
 #### 👤 User Authentication & Organization
 
 - [x] User registration and login using JWT
-- [x] Create or join organization using unique org code
+- [x] Create or join organization using unique org code or by adding by email directly
 - [x] Role assignment (Admin/Member)
 
 #### 💬 Private Chat
 
 - [x] One-to-one private chat between users of same organization
-- [ ] Responsive chat UI with message timestamps
+- [ ] Better ChatUI
 
 ---
 
@@ -141,16 +141,17 @@ sambad/
 
 #### 📋 Dashboard & User Context
 
-- [ ] List of contacts (all org members)
+- [x] List of contacts (all org members)
 - [ ] List of available rooms (private/group)
 - [ ] Role display (Admin/Member)
 - [ ] User profile preview
 
 #### 🎨 UX/UI Enhancements
 
-- [ ] Show active/online users
-- [ ] Typing indicators (optional)
+- [x] Show active/online users
+- [ ] Typing indicators
 - [ ] Notification badge for unread messages
+- [ ] Emoji Sending Option in messages
 
 ---
 
