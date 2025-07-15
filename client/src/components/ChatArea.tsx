@@ -19,6 +19,7 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { useSocket } from "@/hooks/useSocket";
 import { getSocket } from "@/utils/socket";
+import { useRouter } from "next/navigation";
 
 interface Message {
   _id: string;
@@ -27,21 +28,18 @@ interface Message {
   createdAt: string;
 }
 
-// interface ChatInfo {
-//   _id: string;
-//   chatName?: string;
-//   type?: "channel" | "group" | "dm";
-//   members?: { _id: string; email: string }[];
-//   isPrivate?: boolean;
-// }
 export interface Chat {
   _id: string;
   chatName?: string;
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  // members: { _id: string; email: string }[];
-  members: { _id: string; email: string; username: string }[];
+  members: {
+    _id: string;
+    email: string;
+    username: string;
+    role: "admin" | "member";
+  }[];
 }
 
 interface ChatAreaProps {
@@ -52,8 +50,11 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
   const [Chat, setChat] = useState<Chat | null>(null);
+  const [removingMemberIds, setRemovingMemberIds] = useState<string[]>([]);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { token, id: userId } = useSelector((state: any) => state.user);
+  const router = useRouter();
 
   useSocket(token);
   const socket = getSocket();
@@ -99,12 +100,27 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       });
     };
 
+    const handleMemberRemoved = (data: {
+      chatId: string;
+      removedUserId: string;
+      updatedChat: Chat;
+    }) => {
+      if (data.chatId !== chatId) return;
+      setChat(data.updatedChat);
+      if (data.removedUserId === userId) {
+        alert("You have been removed from this group.");
+        router.push("/chats");
+      }
+    };
+
     socket.on("newMessage", handleNewMessage);
+    socket.on("memberRemoved", handleMemberRemoved);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("memberRemoved", handleMemberRemoved);
     };
-  }, [chatId, token, socket]);
+  }, [chatId, token, socket, userId, router]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -112,7 +128,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
 
   const handleSend = async () => {
     if (!message.trim() || !chatId) return;
-
     const msgContent = message.trim();
     setMessage("");
 
@@ -120,11 +135,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/messages`,
         { chatId, content: msgContent },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch {
       toast.error("Failed to send.");
@@ -150,10 +161,42 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     if (Chat.type === "group") return <Users />;
     return null;
   };
+
   const getChatName = (chat: Chat) => {
     if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
     const other = chat.members.find((m) => m._id !== userId);
     return other?.username || "Direct Message";
+  };
+
+  const currentUserRole =
+    Chat?.members.find((m) => m._id === userId)?.role || "member";
+
+  const removeMember = async (memberId: string) => {
+    if (!Chat || currentUserRole !== "admin") return;
+    if (!confirm("Are you sure you want to remove this member?")) return;
+
+    setRemovingMemberIds((ids) => [...ids, memberId]);
+
+    try {
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/remove-member`,
+        { chatId: Chat._id, userId: memberId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setChat(res.data);
+      toast.success("Member removed successfully");
+
+      socket?.emit("memberRemoved", {
+        chatId: Chat._id,
+        removedUserId: memberId,
+        updatedChat: res.data,
+      });
+    } catch {
+      toast.error("Failed to remove member.");
+    } finally {
+      setRemovingMemberIds((ids) => ids.filter((id) => id !== memberId));
+    }
   };
 
   return (
@@ -161,31 +204,18 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       {/* Header */}
       <div className="p-4 border-b bg-white shadow-sm flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          {/* {getIcon() || (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
-              {Chat?.chatName?.[0] || "C"}
-            </div>
-          )} */}
           {getIcon() || (
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
               {Chat ? getChatName(Chat)[0] : "C"}
             </div>
           )}
-
           <div>
-            {/* <h2 className="font-semibold text-gray-900 flex items-center">
-              {Chat?.chatName || "Chat"}
-              {Chat?.isPrivate && (
-                <Lock className="w-4 h-4 ml-2 text-gray-400" />
-              )}
-            </h2> */}
             <h2 className="font-semibold text-gray-900 flex items-center">
               {Chat ? getChatName(Chat) : "Chat"}
               {Chat?.isPrivate && (
                 <Lock className="w-4 h-4 ml-2 text-gray-400" />
               )}
             </h2>
-
             <p className="text-sm text-gray-600">
               {Chat?.members?.length || 0} members
             </p>
@@ -213,9 +243,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         {messages.length === 0 && (
           <p className="text-center text-gray-500">No messages yet.</p>
         )}
-
         {messages.map((msg) => {
-          // console.log("msg.sender._id:", msg.sender?._id, "userId:", userId);
           const isMe = msg.sender?._id === userId;
           return (
             <div
@@ -249,6 +277,64 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Group Members + Add Member Button */}
+      {Chat?.isGroupChat && (
+        <div className="p-4 border-t bg-gray-50 max-h-60 overflow-y-auto">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold">Members</h3>
+            {currentUserRole === "admin" && (
+              <Button
+                size="sm"
+                className="bg-green-600 text-white hover:bg-green-700"
+                onClick={() => router.push(`/chats/${chatId}/add-members`)}
+              >
+                + Add Member
+              </Button>
+            )}
+          </div>
+          <ul>
+            {Chat.members.map((member) => {
+              const isCurrentUser = member._id === userId;
+              const canRemove = currentUserRole === "admin" && !isCurrentUser;
+              return (
+                <li
+                  key={member._id}
+                  className="flex items-center justify-between py-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>{member.username || member.email}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                        member.role === "admin"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {member.role}
+                    </span>
+                  </div>
+                  {canRemove && (
+                    <button
+                      onClick={() => removeMember(member._id)}
+                      disabled={removingMemberIds.includes(member._id)}
+                      className={`text-sm font-semibold ${
+                        removingMemberIds.includes(member._id)
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-red-500 hover:text-red-700 cursor-pointer"
+                      }`}
+                    >
+                      {removingMemberIds.includes(member._id)
+                        ? "Removing..."
+                        : "Remove"}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 border-t bg-white">
         <div className="flex items-center space-x-3">
@@ -260,7 +346,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              // placeholder={`Message ${Chat?.chatName || "..."}`}
               placeholder={`Message ${Chat ? getChatName(Chat) : "..."}`}
               className="pr-12 bg-gray-100 border-gray-300 focus:bg-white rounded-full"
               disabled={!chatId}

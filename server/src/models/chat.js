@@ -33,8 +33,12 @@ const chatSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
     },
+    admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Chat", chatSchema);
+export default mongoose.models.Chat || mongoose.model("Chat", chatSchema);
