@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const saltRounds = 10;
-// const JWT_SECRET = "jagatjoshi";
 
 const router = Router();
 
@@ -110,6 +109,30 @@ router.get("/users", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error fetching users", error: error.message });
+  }
+});
+
+/**
+ * @route   GET /users/search?query=someText
+ * @desc    Search users by username or email
+ */
+router.get("/users/search", async (req, res) => {
+  const query = req.query.query || "";
+
+  try {
+    const users = await User.find({
+      $or: [
+        { username: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ],
+    })
+      .limit(10)
+      .select("_id username email");
+
+    res.json(users);
+  } catch (error) {
+    console.error("User search error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

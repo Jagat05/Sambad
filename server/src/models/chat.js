@@ -17,9 +17,7 @@ const chatSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    chatName: {
-      type: String,
-    },
+    chatName: String,
     isPrivate: {
       type: Boolean,
       default: true,

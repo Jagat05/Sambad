@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
   Send,
   Paperclip,
   Smile,
-  Phone,
-  Video,
-  MoreHorizontal,
-  Hash,
   Lock,
+  Hash,
   Users,
+  MoreHorizontal,
+  Loader2,
 } from "lucide-react";
+import { Menu, Transition } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSelector } from "react-redux";
@@ -34,7 +34,7 @@ export interface Chat {
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  members: {
+  members?: {
     _id: string;
     email: string;
     username: string;
@@ -49,8 +49,16 @@ interface ChatAreaProps {
 export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
-  const [Chat, setChat] = useState<Chat | null>(null);
-  const [removingMemberIds, setRemovingMemberIds] = useState<string[]>([]);
+  const [chat, setChat] = useState<Chat | null>(null);
+
+  // Add Member Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    { _id: string; username: string; email: string }[]
+  >([]);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [removingIds, setRemovingIds] = useState<string[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { token, id: userId } = useSelector((state: any) => state.user);
@@ -59,12 +67,13 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   useSocket(token);
   const socket = getSocket();
 
+  // Fetch messages and chat info
   useEffect(() => {
     if (!chatId) return;
 
-    const fetchChatData = async () => {
+    const fetchData = async () => {
       try {
-        const [msgRes, infoRes] = await Promise.all([
+        const [msgRes, chatRes] = await Promise.all([
           axios.get<Message[]>(
             `${process.env.NEXT_PUBLIC_API_URL}/messages/${chatId}`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -75,16 +84,15 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
           ),
         ]);
         setMessages(msgRes.data);
-        setChat(infoRes.data);
+        setChat(chatRes.data);
       } catch {
-        toast.error("Failed to load chat.");
+        toast.error("Failed to load chat data.");
       }
     };
 
-    fetchChatData();
+    fetchData();
 
     if (!socket) return;
-
     if (socket.connected) {
       socket.emit("joinChat", chatId);
     } else {
@@ -93,11 +101,10 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       });
     }
 
-    const handleNewMessage = (newMsg: Message) => {
-      setMessages((prev) => {
-        const exists = prev.find((m) => m._id === newMsg._id);
-        return exists ? prev : [...prev, newMsg];
-      });
+    const handleNewMessage = (msg: Message) => {
+      setMessages((prev) =>
+        prev.find((m) => m._id === msg._id) ? prev : [...prev, msg]
+      );
     };
 
     const handleMemberRemoved = (data: {
@@ -122,23 +129,24 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     };
   }, [chatId, token, socket, userId, router]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Send message
   const handleSend = async () => {
     if (!message.trim() || !chatId) return;
-    const msgContent = message.trim();
+    const content = message.trim();
     setMessage("");
-
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/messages`,
-        { chatId, content: msgContent },
+        { chatId, content },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch {
-      toast.error("Failed to send.");
+      toast.error("Failed to send message.");
     }
   };
 
@@ -156,85 +164,234 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     });
 
   const getIcon = () => {
-    if (!Chat) return null;
-    if (Chat.type === "channel") return Chat.isPrivate ? <Lock /> : <Hash />;
-    if (Chat.type === "group") return <Users />;
+    if (!chat) return null;
+    if (chat.type === "channel") return chat.isPrivate ? <Lock /> : <Hash />;
+    if (chat.type === "group") return <Users />;
     return null;
   };
 
-  const getChatName = (chat: Chat) => {
-    if (chat.isGroupChat || chat.type === "channel") return chat.chatName!;
+  const getChatName = () => {
+    if (!chat || !Array.isArray(chat.members)) return "";
+    if (chat.isGroupChat || chat.type === "channel")
+      return chat.chatName || "Chat";
     const other = chat.members.find((m) => m._id !== userId);
     return other?.username || "Direct Message";
   };
 
   const currentUserRole =
-    Chat?.members.find((m) => m._id === userId)?.role || "member";
+    chat && Array.isArray(chat.members)
+      ? chat.members.find((m) => m._id === userId)?.role || "member"
+      : "member";
 
-  const removeMember = async (memberId: string) => {
-    if (!Chat || currentUserRole !== "admin") return;
-    if (!confirm("Are you sure you want to remove this member?")) return;
+  // Search users to add member (debounced)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await axios.get(
+          `${
+            process.env.NEXT_PUBLIC_API_URL
+          }/users/search?query=${encodeURIComponent(searchQuery)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSearchResults(
+          res.data.filter(
+            (u: any) =>
+              !chat?.members || !chat.members.some((m) => m._id === u._id)
+          )
+        );
+      } catch {
+        toast.error("Search failed.");
+      }
+    }, 300);
 
-    setRemovingMemberIds((ids) => [...ids, memberId]);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, chat?.members, token]);
 
+  const addMember = async (id: string) => {
+    setAddingId(id);
+    try {
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/add-member`,
+        { chatId: chat?._id, userIdToAdd: id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setChat(res.data);
+      toast.success("Member added.");
+      setSearchQuery("");
+      setSearchResults([]);
+    } catch {
+      toast.error("Add member failed.");
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  const removeMember = async (id: string) => {
+    if (currentUserRole !== "admin")
+      return toast.error("Only admins can remove members.");
+    if (!confirm("Remove this member?")) return;
+
+    setRemovingIds((ids) => [...ids, id]);
     try {
       const res = await axios.patch(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/remove-member`,
-        { chatId: Chat._id, userId: memberId },
+        { chatId: chat?._id, userId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setChat(res.data);
-      toast.success("Member removed successfully");
-
+      toast.success("Member removed.");
       socket?.emit("memberRemoved", {
-        chatId: Chat._id,
-        removedUserId: memberId,
+        chatId: chat?._id,
+        removedUserId: id,
         updatedChat: res.data,
       });
     } catch {
-      toast.error("Failed to remove member.");
+      toast.error("Remove failed.");
     } finally {
-      setRemovingMemberIds((ids) => ids.filter((id) => id !== memberId));
+      setRemovingIds((ids) => ids.filter((removeId) => removeId !== id));
     }
   };
 
   return (
     <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
-      <div className="p-4 border-b bg-white shadow-sm flex justify-between items-center">
-        <div className="flex items-center space-x-3">
+      <div className="p-4 border-b flex justify-between items-center">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           {getIcon() || (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
-              {Chat ? getChatName(Chat)[0] : "C"}
+            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold select-none">
+              {chat ? getChatName()[0] : "C"}
             </div>
           )}
-          <div>
-            <h2 className="font-semibold text-gray-900 flex items-center">
-              {Chat ? getChatName(Chat) : "Chat"}
-              {Chat?.isPrivate && (
-                <Lock className="w-4 h-4 ml-2 text-gray-400" />
-              )}
+
+          <div className="min-w-[150px] truncate">
+            <h2 className="font-semibold truncate">
+              {chat ? getChatName() : "Chat"}
             </h2>
-            <p className="text-sm text-gray-600">
-              {Chat?.members?.length || 0} members
-            </p>
+            {Array.isArray(chat?.members) && chat.members.length > 1 && (
+              <p className="text-sm text-gray-600">
+                {chat.members.length} members
+              </p>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {Chat?.type === "dm" && (
-            <>
-              <Button variant="ghost" size="sm">
-                <Phone className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Video className="w-4 h-4" />
-              </Button>
-            </>
+
+          {chat?.isGroupChat && currentUserRole === "admin" && (
+            <div
+              className="relative flex-1 min-w-0 ml-4"
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              onFocus={() => setSearchFocused(true)}
+              tabIndex={0}
+            >
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users to add..."
+                className="w-full"
+              />
+              {searchFocused && searchQuery.trim() && (
+                <ul
+                  className="absolute z-50 top-full left-0 right-0 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded shadow-md mt-1"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {searchResults.length === 0 ? (
+                    <li className="p-2 text-sm text-gray-500">
+                      No users found
+                    </li>
+                  ) : (
+                    searchResults.map((user) => (
+                      <li
+                        key={user._id}
+                        className="flex justify-between items-center px-4 py-2 hover:bg-gray-100"
+                      >
+                        <div className="truncate">
+                          <p className="font-semibold truncate">
+                            {user.username}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                        <Button
+                          size="icon"
+                          disabled={addingId === user._id}
+                          onClick={() => addMember(user._id)}
+                        >
+                          {addingId === user._id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Add"
+                          )}
+                        </Button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
           )}
-          <Button variant="ghost" size="sm">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Menu as="div" className="relative">
+            <Menu.Button className="p-2 hover:bg-gray-100 rounded-full">
+              <MoreHorizontal className="w-5 h-5" />
+            </Menu.Button>
+            <Transition
+              as={Fragment}
+              enter="transition ease-out duration-100"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-75"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <Menu.Items className="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg focus:outline-none z-50">
+                {chat?.isGroupChat && (
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          active ? "bg-gray-100" : ""
+                        }`}
+                        onClick={() => {
+                          alert(
+                            "Members: " +
+                              (Array.isArray(chat.members)
+                                ? chat.members.map((m) => m.username).join(", ")
+                                : "")
+                          );
+                        }}
+                      >
+                        View Members
+                      </button>
+                    )}
+                  </Menu.Item>
+                )}
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      className={`block w-full text-left px-4 py-2 text-sm text-red-600 ${
+                        active ? "bg-gray-100" : ""
+                      }`}
+                      onClick={() => {
+                        if (
+                          confirm("Are you sure you want to delete this chat?")
+                        ) {
+                          toast("Chat deleted (demo only).");
+                          router.push("/chats");
+                        }
+                      }}
+                    >
+                      Delete Chat
+                    </button>
+                  )}
+                </Menu.Item>
+              </Menu.Items>
+            </Transition>
+          </Menu>
         </div>
       </div>
 
@@ -277,29 +434,18 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Group Members + Add Member Button */}
-      {Chat?.isGroupChat && (
+      {/* Group Members */}
+      {chat?.isGroupChat && Array.isArray(chat.members) && (
         <div className="p-4 border-t bg-gray-50 max-h-60 overflow-y-auto">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">Members</h3>
-            {currentUserRole === "admin" && (
-              <Button
-                size="sm"
-                className="bg-green-600 text-white hover:bg-green-700"
-                onClick={() => router.push(`/chats/${chatId}/add-members`)}
-              >
-                + Add Member
-              </Button>
-            )}
-          </div>
+          <h3 className="font-semibold mb-2">Members</h3>
           <ul>
-            {Chat.members.map((member) => {
-              const isCurrentUser = member._id === userId;
-              const canRemove = currentUserRole === "admin" && !isCurrentUser;
+            {chat.members.map((member) => {
+              const isMe = member._id === userId;
+              const canRemove = currentUserRole === "admin" && !isMe;
               return (
                 <li
                   key={member._id}
-                  className="flex items-center justify-between py-1"
+                  className="flex justify-between items-center py-1"
                 >
                   <div className="flex items-center space-x-2">
                     <span>{member.username || member.email}</span>
@@ -315,15 +461,15 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
                   </div>
                   {canRemove && (
                     <button
+                      disabled={removingIds.includes(member._id)}
                       onClick={() => removeMember(member._id)}
-                      disabled={removingMemberIds.includes(member._id)}
                       className={`text-sm font-semibold ${
-                        removingMemberIds.includes(member._id)
+                        removingIds.includes(member._id)
                           ? "text-gray-400 cursor-not-allowed"
                           : "text-red-500 hover:text-red-700 cursor-pointer"
                       }`}
                     >
-                      {removingMemberIds.includes(member._id)
+                      {removingIds.includes(member._id)
                         ? "Removing..."
                         : "Remove"}
                     </button>
@@ -335,7 +481,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         </div>
       )}
 
-      {/* Input */}
+      {/* Input Box */}
       <div className="p-4 border-t bg-white">
         <div className="flex items-center space-x-3">
           <Button variant="ghost" size="sm" disabled={!chatId}>
@@ -346,7 +492,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Message ${Chat ? getChatName(Chat) : "..."}`}
+              placeholder={`Message ${chat ? getChatName() : "..."}`}
               className="pr-12 bg-gray-100 border-gray-300 focus:bg-white rounded-full"
               disabled={!chatId}
             />
@@ -354,6 +500,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
               variant="ghost"
               size="sm"
               className="absolute right-2 top-1/2 -translate-y-1/2"
+              disabled={!chatId}
             >
               <Smile className="w-4 h-4" />
             </Button>
