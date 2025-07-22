@@ -128,43 +128,10 @@ router.post("/create-group", authenticate, async (req, res) => {
 });
 
 // PATCH: Add member (only admin)
-// router.patch("/add-member", authenticate, async (req, res) => {
-//   const { chatId, userIdToAdd } = req.body;
-
-//   if (!chatId || !userIdToAdd) {
-//     return res.status(400).json({ error: "chatId and userIdToAdd required" });
-//   }
-
-//   try {
-//     const chat = await Chat.findById(chatId);
-
-//     if (!chat) return res.status(404).json({ error: "Chat not found" });
-//     if (chat.type !== "group")
-//       return res.status(400).json({ error: "Can only add members to groups" });
-
-//     if (!chat.admin || !chat.admin.equals(req.userId)) {
-//       return res.status(403).json({ error: "Only admin can add members" });
-//     }
-
-//     if (chat.members.some((id) => id.equals(userIdToAdd))) {
-//       return res.status(400).json({ error: "User is already a member" });
-//     }
-
-//     chat.members.push(userIdToAdd);
-//     await chat.save();
-
-//     await chat.populate("members", "-password");
-//     res.status(200).json({ message: "Member added successfully", chat });
-//   } catch (error) {
-//     console.error("Add member error:", error);
-//     res.status(500).json({ error: "Failed to add member" });
-//   }
-// });
 router.patch("/add-member", authenticate, async (req, res) => {
   const { chatId, userIdToAdd } = req.body;
 
-  // Logging helps in debugging client-side issues
-  console.log("Add member body:", req.body);
+  // console.log("Add member body:", req.body);
 
   if (!chatId || !userIdToAdd) {
     return res.status(400).json({ error: "chatId and userIdToAdd required" });
@@ -197,7 +164,7 @@ router.patch("/add-member", authenticate, async (req, res) => {
     await chat.populate("members", "-password");
     res.status(200).json({ message: "Member added successfully", chat });
   } catch (error) {
-    console.error("Add member error:", error);
+    // console.error("Add member error:", error);
     res.status(500).json({ error: "Failed to add member" });
   }
 });
@@ -227,7 +194,7 @@ router.patch("/remove-member", authenticate, async (req, res) => {
 
     res.status(200).json({ message: "Member removed", chat });
   } catch (err) {
-    console.error("Remove member error:", err);
+    // console.error("Remove member error:", err);
     res.status(500).json({ error: "Failed to remove member" });
   }
 });
