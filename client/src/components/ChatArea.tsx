@@ -310,17 +310,22 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
 
           {/* Search bar (admin only) */}
           {chat?.isGroupChat && currentUserRole === "admin" && (
-            <div className="relative flex-1 min-w-0 ml-4">
+            <div className="relative w-full max-w-md mx-auto mt-2">
               <Input
+                placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users to add..."
-                className="w-full"
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                className="w-full"
               />
+
+              {/* Search results dropdown */}
               {searchFocused && searchQuery.trim() && (
-                <ul className="absolute z-50 top-full left-0 right-0 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded shadow-md mt-1">
+                <ul
+                  className="absolute z-[100] top-full left-0 right-0 max-h-64 overflow-y-auto bg-white border border-gray-300 rounded shadow-md mt-1"
+                  onMouseDown={(e) => e.preventDefault()} // Prevent blur on click
+                >
                   {searchResults.length === 0 ? (
                     <li className="p-2 text-sm text-gray-500">
                       No users found
@@ -331,16 +336,13 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
                         key={user._id}
                         className="flex justify-between items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
                       >
-                        <div className="truncate">
-                          <p className="font-semibold truncate">
-                            {user.username}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {user.email}
-                          </p>
+                        <div>
+                          <p className="font-semibold">{user.username}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                         <Button
-                          size="icon"
+                          size="sm"
+                          className="ml-2"
                           disabled={addingId === user._id}
                           onClick={() => addMember(user._id)}
                         >
