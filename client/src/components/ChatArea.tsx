@@ -11,6 +11,8 @@ import {
   Users,
   MoreHorizontal,
   Loader2,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { Menu, Transition } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
@@ -34,12 +36,13 @@ export interface Chat {
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  members?: {
+  members: {
     _id: string;
     email: string;
     username: string;
     role: "admin" | "member";
   }[];
+  admin?: string;
 }
 
 interface ChatAreaProps {
@@ -51,7 +54,6 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState<Chat | null>(null);
 
-  // Add Member Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<
     { _id: string; username: string; email: string }[]
@@ -67,7 +69,22 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   useSocket(token);
   const socket = getSocket();
 
-  // Fetch messages and chat info
+  // Fetch chat info (to refresh on add/remove)
+  const fetchChatInfo = async (id: string) => {
+    try {
+      const res = await axios.get<Chat>(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/chat-info/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setChat(res.data);
+    } catch {
+      toast.error("Failed to fetch updated chat info.");
+    }
+  };
+
+  // Initial fetch: messages + chat info + socket listeners
   useEffect(() => {
     if (!chatId) return;
 
@@ -76,11 +93,15 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         const [msgRes, chatRes] = await Promise.all([
           axios.get<Message[]>(
             `${process.env.NEXT_PUBLIC_API_URL}/messages/${chatId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           ),
           axios.get<Chat>(
             `${process.env.NEXT_PUBLIC_API_URL}/chat/chat-info/${chatId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           ),
         ]);
         setMessages(msgRes.data);
@@ -93,13 +114,8 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     fetchData();
 
     if (!socket) return;
-    if (socket.connected) {
-      socket.emit("joinChat", chatId);
-    } else {
-      socket.once("connect", () => {
-        socket.emit("joinChat", chatId);
-      });
-    }
+
+    socket.emit("joinChat", chatId);
 
     const handleNewMessage = (msg: Message) => {
       setMessages((prev) =>
@@ -113,7 +129,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       updatedChat: Chat;
     }) => {
       if (data.chatId !== chatId) return;
-      setChat(data.updatedChat);
+      fetchChatInfo(chatId); // Refresh chat
       if (data.removedUserId === userId) {
         alert("You have been removed from this group.");
         router.push("/chats");
@@ -129,7 +145,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     };
   }, [chatId, token, socket, userId, router]);
 
-  // Auto-scroll on new messages
+  // Scroll bottom on new message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -157,12 +173,14 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     }
   };
 
+  // Format message time
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
 
+  // Get chat icon
   const getIcon = () => {
     if (!chat) return null;
     if (chat.type === "channel") return chat.isPrivate ? <Lock /> : <Hash />;
@@ -170,8 +188,9 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     return null;
   };
 
+  // Get chat display name
   const getChatName = () => {
-    if (!chat || !Array.isArray(chat.members)) return "";
+    if (!chat) return "";
     if (chat.isGroupChat || chat.type === "channel")
       return chat.chatName || "Chat";
     const other = chat.members.find((m) => m._id !== userId);
@@ -179,28 +198,26 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
   };
 
   const currentUserRole =
-    chat && Array.isArray(chat.members)
-      ? chat.members.find((m) => m._id === userId)?.role || "member"
-      : "member";
+    chat?.members.find((m) => m._id === userId)?.role || "member";
 
-  // Search users to add member (debounced)
+  // Search users for adding member
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
     }
+
     const timeout = setTimeout(async () => {
       try {
         const res = await axios.get(
-          `${
-            process.env.NEXT_PUBLIC_API_URL
-          }/users/search?query=${encodeURIComponent(searchQuery)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `${process.env.NEXT_PUBLIC_API_URL}/users/search?query=${searchQuery}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         setSearchResults(
           res.data.filter(
-            (u: any) =>
-              !chat?.members || !chat.members.some((m) => m._id === u._id)
+            (u: any) => !chat?.members.some((m) => m._id === u._id)
           )
         );
       } catch {
@@ -211,25 +228,39 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     return () => clearTimeout(timeout);
   }, [searchQuery, chat?.members, token]);
 
-  const addMember = async (id: string) => {
-    setAddingId(id);
+  // Add member handler
+  const addMember = async (userIdToAdd: string) => {
+    if (!userIdToAdd || !chat?._id) return;
+
+    setAddingId(userIdToAdd);
     try {
       const res = await axios.patch(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/add-member`,
-        { chatId: chat?._id, userIdToAdd: id },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          chatId: chat._id,
+          userIdToAdd,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      setChat(res.data);
-      toast.success("Member added.");
+
+      toast.success("Member added successfully");
+
+      // Update chat info
+      await fetchChatInfo(chat._id);
       setSearchQuery("");
       setSearchResults([]);
-    } catch {
-      toast.error("Add member failed.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to add member");
     } finally {
       setAddingId(null);
     }
   };
 
+  // Remove member handler
   const removeMember = async (id: string) => {
     if (currentUserRole !== "admin")
       return toast.error("Only admins can remove members.");
@@ -242,8 +273,8 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
         { chatId: chat?._id, userId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setChat(res.data);
       toast.success("Member removed.");
+      await fetchChatInfo(chatId!); // Refresh chat
       socket?.emit("memberRemoved", {
         chatId: chat?._id,
         removedUserId: id,
@@ -260,6 +291,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
       <div className="p-4 border-b flex justify-between items-center">
+        {/* Left: icon + chat name + members count + search */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {getIcon() || (
             <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold select-none">
@@ -271,31 +303,24 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
             <h2 className="font-semibold truncate">
               {chat ? getChatName() : "Chat"}
             </h2>
-            {Array.isArray(chat?.members) && chat.members.length > 1 && (
-              <p className="text-sm text-gray-600">
-                {chat.members.length} members
-              </p>
-            )}
+            <p className="text-sm text-gray-600">
+              {chat?.members.length ?? 0} members
+            </p>
           </div>
 
+          {/* Search bar (admin only) */}
           {chat?.isGroupChat && currentUserRole === "admin" && (
-            <div
-              className="relative flex-1 min-w-0 ml-4"
-              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-              onFocus={() => setSearchFocused(true)}
-              tabIndex={0}
-            >
+            <div className="relative flex-1 min-w-0 ml-4">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users to add..."
                 className="w-full"
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               />
               {searchFocused && searchQuery.trim() && (
-                <ul
-                  className="absolute z-50 top-full left-0 right-0 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded shadow-md mt-1"
-                  onMouseDown={(e) => e.preventDefault()}
-                >
+                <ul className="absolute z-50 top-full left-0 right-0 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded shadow-md mt-1">
                   {searchResults.length === 0 ? (
                     <li className="p-2 text-sm text-gray-500">
                       No users found
@@ -304,7 +329,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
                     searchResults.map((user) => (
                       <li
                         key={user._id}
-                        className="flex justify-between items-center px-4 py-2 hover:bg-gray-100"
+                        className="flex justify-between items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
                       >
                         <div className="truncate">
                           <p className="font-semibold truncate">
@@ -334,6 +359,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
           )}
         </div>
 
+        {/* Right side menu */}
         <div className="flex items-center gap-2">
           <Menu as="div" className="relative">
             <Menu.Button className="p-2 hover:bg-gray-100 rounded-full">
@@ -359,9 +385,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
                         onClick={() => {
                           alert(
                             "Members: " +
-                              (Array.isArray(chat.members)
-                                ? chat.members.map((m) => m.username).join(", ")
-                                : "")
+                              chat.members.map((m) => m.username).join(", ")
                           );
                         }}
                       >
@@ -435,7 +459,7 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
       </div>
 
       {/* Group Members */}
-      {chat?.isGroupChat && Array.isArray(chat.members) && (
+      {chat?.isGroupChat && (
         <div className="p-4 border-t bg-gray-50 max-h-60 overflow-y-auto">
           <h3 className="font-semibold mb-2">Members</h3>
           <ul>
@@ -517,3 +541,10 @@ export const ChatArea = ({ chatId }: ChatAreaProps) => {
     </div>
   );
 };
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
