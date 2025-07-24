@@ -7,6 +7,7 @@ const initialState = {
   email: "",
   role: "guest",
   isLoggedIn: false,
+  avatar: "",
 };
 
 const userSlice = createSlice({
@@ -20,6 +21,10 @@ const userSlice = createSlice({
       state.email = action.payload.email;
       state.role = action.payload.role;
       state.isLoggedIn = true;
+      state.avatar = action.payload.avatar || "";
+    },
+    updateAvatar(state, action) {
+      state.avatar = action.payload;
     },
     logoutUser(state) {
       state.id = null;
@@ -28,9 +33,10 @@ const userSlice = createSlice({
       state.email = "";
       state.role = "guest";
       state.isLoggedIn = false;
+      state.avatar = "";
     },
   },
 });
 
-export const { setUser, logoutUser } = userSlice.actions;
+export const { setUser, logoutUser, updateAvatar } = userSlice.actions;
 export default userSlice.reducer;

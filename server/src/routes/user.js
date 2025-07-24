@@ -2,6 +2,8 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { authenticate } from "../middleware/authenticate.js";
+import upload from "../middleware/upload.js";
 
 const saltRounds = 10;
 
@@ -135,5 +137,32 @@ router.get("/users/search", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+router.post(
+  "/users/avatar",
+  authenticate,
+  upload.single("avatar"),
+  async (req, res) => {
+    try {
+      if (!req.file || !req.file.path) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const user = await User.findById(req.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      user.avatar = req.file.path;
+      await user.save();
+
+      res.json({
+        message: "Avatar uploaded successfully",
+        avatar: user.avatar,
+      });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).json({ message: "Upload failed", error: error.message });
+    }
+  }
+);
 
 export default router;

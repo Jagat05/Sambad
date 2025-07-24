@@ -1,11 +1,13 @@
 "use client";
 
+import React, { useState } from "react";
 import { User, Settings, Bell, Shield, LogOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { logoutUser } from "@/redux/reducerSlices/userSlice";
+import { logoutUser, updateAvatar } from "@/redux/reducerSlices/userSlice";
 import { disconnectSocket } from "@/utils/socket";
+import axios from "axios";
 
 interface UserProfileProps {
   onClose: () => void;
@@ -15,16 +17,50 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  // Select username from Redux store
   const username = useSelector((state: any) => state.user.username);
   const userEmail = useSelector((state: any) => state.user.email);
-  // Get first letter of username or fallback to '?'
+  const avatarUrl = useSelector((state: any) => state.user.avatar);
   const userInitial = username?.charAt(0)?.toUpperCase() || "?";
+
+  const [uploading, setUploading] = useState(false);
+
   const handleLogout = () => {
     disconnectSocket();
-    dispatch(logoutUser()); // Reset Redux user state
-    localStorage.removeItem("user"); // Optional: clear localStorage
-    router.push("/login"); // Redirect to login
+    dispatch(logoutUser());
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const token = localStorage.getItem("token") || "";
+
+      const res = await axios.post(
+        "http://localhost:8080/users/avatar",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const newAvatarUrl = res.data.avatar;
+      dispatch(updateAvatar(newAvatarUrl));
+    } catch (error) {
+      console.error("Avatar upload failed", error);
+      alert("Failed to upload avatar");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -44,9 +80,37 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
 
       {/* User Info */}
       <div className="flex items-center space-x-3 mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
-          {userInitial}
+        <div
+          className="relative w-12 h-12 rounded-full overflow-hidden cursor-pointer group"
+          title="Click to upload avatar"
+          onClick={() => document.getElementById("avatarInput")?.click()}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="User Avatar"
+              className="w-full h-full object-cover rounded-full"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xl">
+              {userInitial}
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-full">
+            <User className="w-6 h-6 text-white" />
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            id="avatarInput"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
         </div>
+
         <div>
           <h4 className="font-semibold text-gray-900">{username}</h4>
           <p className="text-sm text-gray-600">{userEmail}</p>
@@ -77,7 +141,7 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
           Privacy
         </Button>
 
-        {/* 🔴 Logout Button */}
+        {/* Logout Button */}
         <Button
           onClick={handleLogout}
           variant="ghost"

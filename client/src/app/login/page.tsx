@@ -8,7 +8,7 @@ import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { setUser } from "@/redux/reducerSlices/userSlice";
-import { initializeSocket } from "@/utils/socket"; //  import
+import { initializeSocket } from "@/utils/socket";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -52,7 +52,11 @@ export default function Login() {
 
       const { user, token } = response.data;
 
-      // Save user to Redux
+      // ✅ Save token and user info to localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // ✅ Save user to Redux
       dispatch(
         setUser({
           id: user._id,
@@ -62,24 +66,15 @@ export default function Login() {
           role: user.role,
         })
       );
-      // console.log(" Dispatching setUser:", {
-      //   id: user._id,
-      //   username: user.username,
-      //   email: user.email,
-      //   token,
-      //   role: user.role,
-      // });
 
-      //  Initialize socket
+      // ✅ Connect socket
       initializeSocket(token);
 
       toast.success("🎉 Login Successful!");
-
-      //  Redirect
       router.push("/home");
     } catch (error: any) {
       const message =
-        error?.response?.data?.Message || "🚨 Login failed. Try again.";
+        error?.response?.data?.message || "🚨 Login failed. Please try again.";
       toast.error(message);
     } finally {
       setSubmitting(false);
