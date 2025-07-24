@@ -143,8 +143,8 @@ sambad/
 #### 🧑‍🤝‍🧑 Group Chat
 
 - [x] Create Group Chat and Channel
-- [ ] Add/remove members in groups
-- [ ] Group messages stored and rendered in real-time
+- [x] Add/remove members in groups
+- [x] Group messages stored and rendered in real-time
 
 #### 🧑‍🤝 Admin Work
 
