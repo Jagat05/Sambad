@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import ReduxProvider from "@/redux/provider";
-import { OnlineStatusListener } from "@/components/OnlineStatusListener"; // 👈 Add this
+import { OnlineStatusListener } from "@/components/OnlineStatusListener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReduxProvider>
-          <OnlineStatusListener /> {/* 👈 Add this inside provider */}
+          <OnlineStatusListener />
           {children}
           <Toaster
             position="top-right"

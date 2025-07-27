@@ -13,6 +13,7 @@ const userSchema = new Schema(
     },
     password: { type: String, required: true, minlength: 8 },
     role: { type: String, enum: ["admin", "member"], default: "member" },
+    avatar: { type: String },
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",

@@ -28,6 +28,7 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
     disconnectSocket();
     dispatch(logoutUser());
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     router.push("/login");
   };
 

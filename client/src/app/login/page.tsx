@@ -52,22 +52,23 @@ export default function Login() {
 
       const { user, token } = response.data;
 
-      // ✅ Save token and user info to localStorage
+      // ✅ Normalize user object
+      const normalizedUser = {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || "",
+      };
+
+      // ✅ Save to localStorage
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
 
-      // ✅ Save user to Redux
-      dispatch(
-        setUser({
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          token,
-          role: user.role,
-        })
-      );
+      // ✅ Set to Redux
+      dispatch(setUser({ ...normalizedUser, token }));
 
-      // ✅ Connect socket
+      // ✅ Initialize socket connection
       initializeSocket(token);
 
       toast.success("🎉 Login Successful!");
