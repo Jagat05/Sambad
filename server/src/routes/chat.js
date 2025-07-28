@@ -5,6 +5,9 @@ import { authenticate } from "../middleware/authenticate.js";
 
 const router = express.Router();
 
+// Helper: fields to populate from User
+const memberFields = "_id username email avatar";
+
 // POST: Start or get one-to-one chat
 router.post("/", authenticate, async (req, res) => {
   const { userId, organizationId } = req.body;
@@ -14,16 +17,16 @@ router.post("/", authenticate, async (req, res) => {
       isGroupChat: false,
       members: { $all: [req.userId, userId] },
       organizationId,
-    }).populate("members", "-password");
+    }).populate("members", memberFields);
 
     if (!chat) {
       chat = await Chat.create({
         members: [req.userId, userId],
         organizationId,
         isGroupChat: false,
-        admin: req.userId, // admin always set
+        admin: req.userId,
       });
-      await chat.populate("members", "-password");
+      await chat.populate("members", memberFields);
     }
 
     res.status(200).json(chat);
@@ -40,7 +43,7 @@ router.get("/:organizationId", authenticate, async (req, res) => {
       organizationId: req.params.organizationId,
       members: req.userId,
     })
-      .populate("members", "-password")
+      .populate("members", memberFields)
       .sort({ updatedAt: -1 });
 
     res.json(chats);
@@ -54,7 +57,7 @@ router.get("/chat-info/:chatId", authenticate, async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.chatId).populate(
       "members",
-      "-password"
+      memberFields
     );
     res.json(chat);
   } catch {
@@ -75,7 +78,6 @@ router.post("/create-channel", authenticate, async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
 
   try {
-    // Deduplicate members + add admin
     const allMembers = [...members, req.userId];
     const uniqueMembers = [...new Set(allMembers.map((id) => id.toString()))];
 
@@ -89,7 +91,7 @@ router.post("/create-channel", authenticate, async (req, res) => {
       admin: req.userId,
     });
 
-    await channel.populate("members", "-password");
+    await channel.populate("members", memberFields);
     res.status(201).json(channel);
   } catch (err) {
     console.error("Channel creation error:", err);
@@ -106,7 +108,6 @@ router.post("/create-group", authenticate, async (req, res) => {
   }
 
   try {
-    // Deduplicate members + add admin
     const allMembers = [...members, req.userId];
     const uniqueMembers = [...new Set(allMembers.map((id) => id.toString()))];
 
@@ -119,7 +120,7 @@ router.post("/create-group", authenticate, async (req, res) => {
       admin: req.userId,
     });
 
-    await newGroup.populate("members", "-password");
+    await newGroup.populate("members", memberFields);
     res.status(201).json(newGroup);
   } catch (error) {
     console.error("Group creation error:", error);
@@ -130,8 +131,6 @@ router.post("/create-group", authenticate, async (req, res) => {
 // PATCH: Add member (only admin)
 router.patch("/add-member", authenticate, async (req, res) => {
   const { chatId, userIdToAdd } = req.body;
-
-  // console.log("Add member body:", req.body);
 
   if (!chatId || !userIdToAdd) {
     return res.status(400).json({ error: "chatId and userIdToAdd required" });
@@ -161,10 +160,9 @@ router.patch("/add-member", authenticate, async (req, res) => {
     chat.members.push(userIdToAdd);
     await chat.save();
 
-    await chat.populate("members", "-password");
+    await chat.populate("members", memberFields);
     res.status(200).json({ message: "Member added successfully", chat });
   } catch (error) {
-    // console.error("Add member error:", error);
     res.status(500).json({ error: "Failed to add member" });
   }
 });
@@ -190,11 +188,10 @@ router.patch("/remove-member", authenticate, async (req, res) => {
     chat.members = chat.members.filter((id) => !id.equals(userId));
 
     await chat.save();
-    await chat.populate("members", "-password");
+    await chat.populate("members", memberFields);
 
     res.status(200).json({ message: "Member removed", chat });
   } catch (err) {
-    // console.error("Remove member error:", err);
     res.status(500).json({ error: "Failed to remove member" });
   }
 });

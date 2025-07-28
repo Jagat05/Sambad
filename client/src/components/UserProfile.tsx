@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { logoutUser, updateAvatar } from "@/redux/reducerSlices/userSlice";
 import { disconnectSocket } from "@/utils/socket";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface UserProfileProps {
   onClose: () => void;
@@ -44,7 +45,7 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
       const token = localStorage.getItem("token") || "";
 
       const res = await axios.post(
-        "http://localhost:8080/users/avatar",
+        `${process.env.NEXT_PUBLIC_API_URL}/users/avatar`,
         formData,
         {
           headers: {
@@ -56,9 +57,15 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
 
       const newAvatarUrl = res.data.avatar;
       dispatch(updateAvatar(newAvatarUrl));
+      toast.success("Avatar updated!");
+
+      // ✅ Optional: Refresh the page or emit an event to update other components
+      // Example using custom event:
+      const event = new Event("avatar-updated");
+      window.dispatchEvent(event);
     } catch (error) {
       console.error("Avatar upload failed", error);
-      alert("Failed to upload avatar");
+      toast.error("Failed to upload avatar");
     } finally {
       setUploading(false);
     }
@@ -66,7 +73,6 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
 
   return (
     <div className="p-4 border-b border-gray-200 bg-gray-50">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Profile</h3>
         <Button
@@ -79,7 +85,6 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
         </Button>
       </div>
 
-      {/* User Info */}
       <div className="flex items-center space-x-3 mb-4">
         <div
           className="relative w-12 h-12 rounded-full overflow-hidden cursor-pointer group"
@@ -118,7 +123,7 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Actions */}
       <div className="space-y-2">
         <Button
           variant="ghost"
@@ -141,8 +146,6 @@ export const UserProfile = ({ onClose }: UserProfileProps) => {
           <Shield className="w-4 h-4 mr-3" />
           Privacy
         </Button>
-
-        {/* Logout Button */}
         <Button
           onClick={handleLogout}
           variant="ghost"

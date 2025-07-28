@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-interface Member {
-  id: string;
+interface ChatMember {
+  _id: string;
   username: string;
+  email?: string;
+  avatar?: string;
 }
 
 export interface Chat {
@@ -19,7 +21,13 @@ export interface Chat {
   isGroupChat: boolean;
   type?: "channel" | "group" | "dm";
   isPrivate?: boolean;
-  members: { _id: string; email: string; username: string }[];
+  members: ChatMember[];
+}
+
+interface Member {
+  id: string;
+  username: string;
+  avatar?: string;
 }
 
 interface ChatSidebarProps {
@@ -33,7 +41,7 @@ export const ChatSidebar = ({
   selectedChat,
   onSelectChat,
   organizationId,
-  members = [],
+  members,
 }: ChatSidebarProps) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,8 +56,19 @@ export const ChatSidebar = ({
   const { token, id: userId } = useSelector((state: any) => state.user);
   const { onlineUsers } = useSelector((state: any) => state.online);
 
+  // useEffect(() => {
+  //   if (organizationId) fetchChats();
+  // }, [organizationId]);
+
   useEffect(() => {
     if (organizationId) fetchChats();
+
+    const handleAvatarUpdate = () => fetchChats();
+    window.addEventListener("avatar-updated", handleAvatarUpdate);
+
+    return () => {
+      window.removeEventListener("avatar-updated", handleAvatarUpdate);
+    };
   }, [organizationId]);
 
   const fetchChats = async () => {
@@ -57,9 +76,7 @@ export const ChatSidebar = ({
     try {
       const { data } = await axios.get<Chat[]>(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/${organizationId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setChats(data);
     } catch {
@@ -84,20 +101,12 @@ export const ChatSidebar = ({
   };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim()) {
-      return toast.error("Group name required");
-    }
+    if (!newGroupName.trim()) return toast.error("Group name required");
     setCreatingGroup(true);
     try {
       const { data } = await axios.post<Chat>(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/create-group`,
-        {
-          organizationId,
-          chatName: newGroupName.trim(),
-          isGroupChat: true,
-          isPrivate: false,
-          members: [userId],
-        },
+        { organizationId, chatName: newGroupName.trim(), members: [userId] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setChats((prev) => [data, ...prev]);
@@ -106,26 +115,19 @@ export const ChatSidebar = ({
       onSelectChat(data);
       toast.success("Group created.");
     } catch {
-      toast.error("Failed to create Group.");
+      toast.error("Failed to create group.");
     } finally {
       setCreatingGroup(false);
     }
   };
+
   const handleCreateChannel = async () => {
-    if (!newChannelName.trim()) {
-      return toast.error("Channel name required");
-    }
+    if (!newChannelName.trim()) return toast.error("Channel name required");
     setCreatingChannel(true);
     try {
       const { data } = await axios.post<Chat>(
         `${process.env.NEXT_PUBLIC_API_URL}/chat/create-channel`,
-        {
-          organizationId,
-          chatName: newChannelName.trim(),
-          isGroupChat: true,
-          isPrivate: false,
-          members: [userId],
-        },
+        { organizationId, chatName: newChannelName.trim(), members: [userId] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setChats((prev) => [data, ...prev]);
@@ -147,7 +149,6 @@ export const ChatSidebar = ({
   };
 
   const isUserOnline = (id: string) => onlineUsers.includes(id);
-
   const filteredChats = chats.filter((chat) =>
     getChatName(chat).toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -168,87 +169,74 @@ export const ChatSidebar = ({
         </div>
       </div>
 
-      <div className="p-4 border-b">
-        {/* New Channel Button */}
-        <div className="channel">
-          <Button
-            onClick={() => setIsCreatingChannel(true)}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-            disabled={loading}
-          >
-            <Plus className="w-4 h-4 mr-2" /> New Channel
-          </Button>
-        </div>
-
-        {/* New Group Button */}
-        <div className="mt-2.5">
-          <Button
-            onClick={() => setIsCreatingGroup(true)}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-            disabled={loading}
-          >
-            <Plus className="w-4 h-4 mr-2" /> New Group
-          </Button>
-        </div>
+      {/* Create Buttons */}
+      <div className="p-4 border-b flex flex-col gap-2">
+        <Button
+          onClick={() => setIsCreatingChannel(true)}
+          className="w-full bg-blue-600 text-white"
+          disabled={loading}
+        >
+          <Plus className="w-4 h-4 mr-2" /> New Channel
+        </Button>
+        <Button
+          onClick={() => setIsCreatingGroup(true)}
+          className="w-full bg-indigo-600 text-white"
+          disabled={loading}
+        >
+          <Plus className="w-4 h-4 mr-2" /> New Group
+        </Button>
       </div>
 
-      {/* Create Channel Modal */}
-      {isCreatingChannel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-80 relative">
+      {/* Modals */}
+      {(isCreatingChannel || isCreatingGroup) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80 relative">
             <X
-              className="absolute right-3 top-3 cursor-pointer"
-              onClick={() => setIsCreatingChannel(false)}
-              aria-label="Close modal"
+              className="absolute top-3 right-3 cursor-pointer"
+              onClick={() => {
+                setIsCreatingChannel(false);
+                setIsCreatingGroup(false);
+              }}
             />
-            <h2 className="text-lg font-semibold mb-4">Create Channel</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              {isCreatingChannel ? "Create Channel" : "Create Group"}
+            </h2>
             <Input
-              value={newChannelName}
-              onChange={(e) => setNewChannelName(e.target.value)}
-              placeholder="Channel name"
-              onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+              placeholder={`Enter ${
+                isCreatingChannel ? "channel" : "group"
+              } name`}
+              value={isCreatingChannel ? newChannelName : newGroupName}
+              onChange={(e) =>
+                isCreatingChannel
+                  ? setNewChannelName(e.target.value)
+                  : setNewGroupName(e.target.value)
+              }
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                (isCreatingChannel
+                  ? handleCreateChannel()
+                  : handleCreateGroup())
+              }
             />
             <div className="flex justify-end gap-2 mt-4">
               <Button
                 variant="outline"
-                onClick={() => setIsCreatingChannel(false)}
-                disabled={creatingChannel}
+                onClick={() => {
+                  setIsCreatingChannel(false);
+                  setIsCreatingGroup(false);
+                }}
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateChannel} disabled={creatingChannel}>
-                {creatingChannel ? "Creating..." : "Create"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Create Group Modal */}
-      {isCreatingGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-80 relative">
-            <X
-              className="absolute right-3 top-3 cursor-pointer"
-              onClick={() => setIsCreatingGroup(false)}
-              aria-label="Close modal"
-            />
-            <h2 className="text-lg font-semibold mb-4">Create Group</h2>
-            <Input
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder="Group name"
-              onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()}
-            />
-            <div className="flex justify-end gap-2 mt-4">
               <Button
-                variant="outline"
-                onClick={() => setIsCreatingGroup(false)}
-                disabled={creatingGroup}
+                onClick={
+                  isCreatingChannel ? handleCreateChannel : handleCreateGroup
+                }
+                disabled={isCreatingChannel ? creatingChannel : creatingGroup}
               >
-                Cancel
-              </Button>
-              <Button onClick={handleCreateGroup} disabled={creatingGroup}>
-                {creatingGroup ? "Creating..." : "Create"}
+                {(isCreatingChannel ? creatingChannel : creatingGroup)
+                  ? "Creating..."
+                  : "Create"}
               </Button>
             </div>
           </div>
@@ -265,38 +253,38 @@ export const ChatSidebar = ({
           filteredChats.map((chat) => {
             const other = chat.members.find((m) => m._id !== userId);
             const isOnline = other ? isUserOnline(other._id) : false;
-
             const chatName = getChatName(chat);
-            const initials = chatName[0]?.toUpperCase() || "?";
+            const isSelected = selectedChat === chat._id;
 
             return (
               <div
                 key={chat._id}
-                onClick={() => onSelectChat(chat)}
                 className={`p-3 cursor-pointer hover:bg-gray-100 ${
-                  selectedChat === chat._id
-                    ? "bg-blue-50 border-l-4 border-blue-600"
-                    : ""
+                  isSelected ? "bg-blue-50 border-l-4 border-blue-600" : ""
                 }`}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onSelectChat(chat);
-                }}
+                onClick={() => onSelectChat(chat)}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-semibold uppercase">
-                      {chat.isGroupChat || chat.type === "channel" ? (
-                        chat.type === "channel" ? (
+                    {chat.isGroupChat || chat.type === "channel" ? (
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        {chat.type === "channel" ? (
                           <Hash className="w-4 h-4" />
                         ) : (
                           <Users className="w-4 h-4" />
-                        )
-                      ) : (
-                        initials
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : other?.avatar ? (
+                      <img
+                        src={other.avatar}
+                        alt={other.username}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold uppercase">
+                        {other?.username?.[0] ?? "?"}
+                      </div>
+                    )}
                     {chat.type === "dm" && (
                       <span
                         className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
@@ -312,7 +300,7 @@ export const ChatSidebar = ({
           })
         )}
 
-        {/* Members List */}
+        {/* Members */}
         <div className="mt-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Members
         </div>
@@ -321,18 +309,21 @@ export const ChatSidebar = ({
           return (
             <div
               key={member.id}
+              className="p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100"
               onClick={() => handleSelectMember(member.id)}
-              className="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-100"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSelectMember(member.id);
-              }}
             >
               <div className="relative">
-                <div className="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center uppercase font-medium">
-                  {member.username[0]}
-                </div>
+                {member.avatar ? (
+                  <img
+                    src={member.avatar}
+                    alt={member.username}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center uppercase font-medium">
+                    {member.username[0]}
+                  </div>
+                )}
                 <span
                   className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
                     isOnline ? "bg-green-500" : "bg-gray-400"
